@@ -9,3 +9,7 @@ edition = "2018"
 [dependencies]
 keycloak = "10"
 gitlab = "0.1210"
+reqwest = "0.10"
+tokio = { version = "0.2", features = ["full"] }
+anyhow = "1.0"
+log = "0.4"
