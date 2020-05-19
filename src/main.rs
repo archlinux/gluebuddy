@@ -59,7 +59,8 @@ async fn run() -> Result<()> {
             let members = admin.groups_members_get(realm, sub_group.id.as_ref().unwrap(), None, None, None).await?;
             for member in members {
                 println!("-> member: {:?}", member.username.unwrap());
-                println!("   required actions: {:?}", member.required_actions);
+                //println!("-> member: {:?}", member.username.unwrap());
+                //println!("   required actions: {:?}", member.required_actions);
 
                 // Skip all users that already have a require action to configure TOTP
                 if let Some(required_actions) = member.required_actions {
@@ -72,6 +73,9 @@ async fn run() -> Result<()> {
                 println!("-> credentials: {:?}", credentials);
 
                 // TODO: if user has totp in credentials: [] -> skip
+                if credentials.iter().any(|credential| credential.type_.as_ref().map(|type_| type_.eq("otp")).unwrap_or(false)) {
+                    continue;
+                }
 
                 // add docs -> make a second loop and remove require user action for TOTP in case the credentials already have totp, this is required as get->check->put is not race condition free and a user can setup totp in between get->put
 
@@ -88,6 +92,7 @@ async fn run() -> Result<()> {
                     },
                 };
                 println!("set required actions: {:?}", member.required_actions);
+                // TODO: put back user in non dry mode
             }
         }
     }
