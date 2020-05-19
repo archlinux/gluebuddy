@@ -1,11 +1,26 @@
 [package]
 name = "gluebuddy"
 version = "0.1.0"
-authors = ["Sven-Hendrik Haase <svenstaro@gmail.com>"]
+authors = ["Levente Polyak <anthraxx@archlinux.org>", "Sven-Hendrik Haase <svenstaro@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license-file = "LICENSE"
+repository = "https://gitlab.archlinux.org/archlinux/gluebuddy"
+categories = ["command-line-utilities"]
+publish = false
 
 [dependencies]
-keycloak = "10"
-gitlab = "0.1210"
+keycloak = "12.0"
+gitlab = "0.1400"
+reqwest = "0.11"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+futures = "0.3"
+anyhow = "1.0"
+log = "0.4"
+env_logger = "0.9"
+structopt = "0.3"
+serde = {version = "1.0", features = ["derive"]}
+strum = "0.21"
+strum_macros = "0.21"
+difference = "2.0"
+term = "0.7"
+itertools = "0.10"
