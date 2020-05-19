@@ -1,0 +1,18 @@
+image: "rust:latest"
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  artifacts:
+    paths:
+      - target/release/gluebuddy
+  script:
+    - cargo build --release
+
+test:
+  stage: test
+  script:
+    - cargo test --release
