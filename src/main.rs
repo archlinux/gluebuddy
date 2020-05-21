@@ -127,7 +127,11 @@ async fn run_keycloak(args: Args) -> Result<()> {
 async fn main() {
     let args = Args::from_args();
 
-    let logging = if args.verbose { "debug" } else { "info" };
+    let logging = match args.verbose {
+        0 => "info",
+        1 => "gluebuddy=debug",
+        _ => "debug",
+    };
 
     env_logger::init_from_env(Env::default()
         .default_filter_or(logging));

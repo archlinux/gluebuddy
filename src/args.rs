@@ -8,9 +8,9 @@ use anyhow::Result;
 #[derive(Debug, StructOpt)]
 #[structopt(about="A secure helper daemon that watches several aspects of the Arch Linux infrastructure and makes sure that certain conditions are met.", global_settings = &[AppSettings::ColoredHelp, AppSettings::DeriveDisplayOrder])]
 pub struct Args {
-    /// Verbose logging
-    #[structopt(short, long)]
-    pub verbose: bool,
+    /// Verbose logging, specify twice for more
+    #[structopt(short, long, parse(from_occurrences))]
+    pub verbose: u8,
     #[structopt(subcommand)]
     pub subcommand: Option<SubCommand>,
 }
