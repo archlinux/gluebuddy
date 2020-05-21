@@ -1,3 +1,10 @@
+extern crate anyhow;
+
+use args::*;
+mod args;
+
+use structopt::StructOpt;
+
 use keycloak::{KeycloakAdmin, KeycloakAdminToken};
 
 use reqwest::Client;
@@ -17,7 +24,15 @@ async fn get_user_credentials<'a>(admin: &'a KeycloakAdmin<'a>, realm: &str, mem
 }
 
 // TODO: error handling for all unwrap shizzle
-async fn run() -> Result<()> {
+async fn run(args: Args) -> Result<()> {
+    match args.subcommand {
+        Some(SubCommand::Completions(completions)) => args::gen_completions(&completions)?,
+        _ => run_keycloak(args).await?,
+    }
+    Ok(())
+}
+
+async fn run_keycloak(args: Args) -> Result<()> {
     let username = &env::var("GLUEBUDDY_KEYCLOAK_USERNAME").or_else(
         |_| bail!("Missing GLUEBUDDY_KEYCLOAK_USERNAME env var")
     )?;
@@ -104,15 +119,20 @@ async fn run() -> Result<()> {
         // TODO: put back user in non dry mode
     }
 
+
     Ok(())
 }
 
 #[tokio::main]
 async fn main() {
-    env_logger::init_from_env(Env::default()
-        .default_filter_or("info"));
+    let args = Args::from_args();
 
-    if let Err(err) = run().await {
+    let logging = if args.verbose { "debug" } else { "info" };
+
+    env_logger::init_from_env(Env::default()
+        .default_filter_or(logging));
+
+    if let Err(err) = run(args).await {
         error!("Error: {:?}", err);
         for cause in err.chain() {
             error!("Caused by: {:?}", cause)
