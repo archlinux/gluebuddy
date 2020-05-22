@@ -1,17 +1,33 @@
+//! This module defines keycloak related actions and enforcements.
+//!
+//! ## Features
+//!
+//! - enforce multi-factor authentication for all staff members
 
-async fn run_keycloak(args: Args) -> Result<()> {
-    let username = &env::var("GLUEBUDDY_KEYCLOAK_USERNAME").or_else(
-        |_| bail!("Missing GLUEBUDDY_KEYCLOAK_USERNAME env var")
-    )?;
-    let password = &env::var("GLUEBUDDY_KEYCLOAK_PASSWORD").or_else(
-        |_| bail!("Missing GLUEBUDDY_KEYCLOAK_PASSWORD env var")
-    )?;
-    let realm = &env::var("GLUEBUDDY_KEYCLOAK_REALM").or_else(
-        |_| bail!("Missing GLUEBUDDY_KEYCLOAK_REALM env var")
-    )?;
-    let url = &env::var("GLUEBUDDY_KEYCLOAK_URL").or_else(
-        |_| bail!("Missing GLUEBUDDY_KEYCLOAK_URL env var")
-    )?;
+use crate::args::*;
+
+use reqwest::Client;
+use keycloak::{KeycloakAdmin, KeycloakAdminToken};
+use keycloak::types::{UserRepresentation, CredentialRepresentation};
+
+use futures::future::try_join_all;
+
+use anyhow::{Context, Result};
+use log::{debug, info};
+
+use std::env;
+
+pub async fn run(action: Action) -> Result<()> {
+    enforce_multi_factor_authentication(action).await?;
+    Ok(())
+}
+
+// TODO: error handling for all unwrap shizzle
+async fn enforce_multi_factor_authentication(action: Action) -> Result<()> {
+    let username = &env::var("GLUEBUDDY_KEYCLOAK_USERNAME").context("Missing env var GLUEBUDDY_KEYCLOAK_USERNAME")?;
+    let password = &env::var("GLUEBUDDY_KEYCLOAK_PASSWORD").context("Missing env var GLUEBUDDY_KEYCLOAK_PASSWORD")?;
+    let realm = &env::var("GLUEBUDDY_KEYCLOAK_REALM").context("Missing GLUEBUDDY_KEYCLOAK_REALM env var")?;
+    let url = &env::var("GLUEBUDDY_KEYCLOAK_URL").context("Missing GLUEBUDDY_KEYCLOAK_URL env var")?;
 
     let client = Client::new();
 
@@ -29,12 +45,12 @@ async fn run_keycloak(args: Args) -> Result<()> {
 
     let groups_members = groups.into_iter().flat_map(|group| {
         let group_name = group.name.as_ref().unwrap().as_ref();
-        debug!("processing group: {}", group_name);
-
-        group.sub_groups.as_ref().unwrap().iter().map(|sub_group| {
-            info!("collecting members of sub group: {}", sub_group.name.as_ref().unwrap());
+        debug!("collect members of group {}", group_name);
+        vec![Box::pin(admin.groups_members_get(realm, group.id.as_ref().unwrap(), None, None, None))].into_iter().chain(
+            group.sub_groups.as_ref().unwrap().iter().map(|sub_group| {
+            debug!("collect members of sub group {}", sub_group.name.as_ref().unwrap());
             Box::pin(admin.groups_members_get(realm, sub_group.id.as_ref().unwrap(), None, None, None))
-        })
+        }))
     });
 
     // TODO: remove duplicates who are in multiple groups
@@ -44,17 +60,17 @@ async fn run_keycloak(args: Args) -> Result<()> {
         // Skip all users that already have a require action to configure TOTP
         if let Some(required_actions) = &member.required_actions {
             if required_actions.contains(&"CONFIGURE_TOTP".into()) {
-                debug!("CONFIGURE_TOTP present in required actions, skipping user: {}", username);
+                debug!("CONFIGURE_TOTP present in required actions, skipping user {}", username);
                 return false;
             }
         }
-        debug!("CONFIGURE_TOTP not present in required actions, proceeding with user: {}", username);
+        debug!("CONFIGURE_TOTP not present in required actions, proceeding with user {}", username);
         true
     }).collect::<Vec<_>>();
 
     info!("collected {} users whose credentials need to be checked", members.len());
 
-    let users_credentials = try_join_all(members.into_iter().map(|member| get_user_credentials(&admin, realm, member))).await?;
+    let users_credentials = try_join_all(members.into_iter().map(|member| users_credentials_get(&admin, realm, member))).await?;
     for (member, credentials) in users_credentials {
         let username = member.username.as_ref().unwrap();
         let credential_types = credentials.iter().map(|credential| credential.type_.as_ref().unwrap().as_ref()).collect::<Vec<_>>();
@@ -64,28 +80,42 @@ async fn run_keycloak(args: Args) -> Result<()> {
 
         let has_otp = credentials.into_iter().any(|credential| credential.type_.as_ref().map(|type_| type_.eq("otp")).unwrap_or(false));
         if has_otp {
-            debug!("otp present in credentials, skipping user: {}", username);
+            debug!("otp present in credentials, skipping user {}", username);
             continue;
         }
 
-        info!("enforce required action CONFIGURE_TOTP for user: {}", username);
+        info!("enforce required action CONFIGURE_TOTP for user {}", username);
 
-        // add docs -> make a second loop and remove require user action for TOTP in case the credentials already have totp, this is required as get->check->put is not race condition free and a user can setup totp in between get->put
-        // to reduce window of opportunity, we do an additional get->set->put per user inside a lopp
-        let mut member = admin.user_get(realm, &member.id.as_ref().unwrap()).await?;
-        member.required_actions = match member.required_actions {
-            None => Some(vec!["CONFIGURE_TOTP".into()]),
-            Some(mut required_actions) => {
-                let totp = "CONFIGURE_TOTP".into();
-                if !required_actions.contains(&totp) {
-                    required_actions.push(totp);
-                }
-                Some(required_actions)
+        match action {
+            Action::Plan => {},
+            Action::Apply => {
+                users_required_actions_add(&admin, realm, member.into()).await?;
+                //admin.users_put(realm, member.id.as_ref().unwrap(), member.into());
             },
-        };
-        // TODO: put back user in non dry mode
+        }
     }
 
+    Ok(())
+}
 
+async fn users_credentials_get<'a>(admin: &'a KeycloakAdmin<'a>, realm: &str, member: UserRepresentation<'a>) -> Result<(UserRepresentation<'a>, Vec<CredentialRepresentation<'a>>)> {
+    let credentials = admin.users_credentials_get(realm, member.id.as_ref().unwrap().as_ref()).await?;
+    Ok((member, credentials))
+}
+
+// add docs -> make a second loop and remove require user action for TOTP in case the credentials already have totp, this is required as get->check->put is not race condition free and a user can setup totp in between get->put
+// to reduce window of opportunity, we do an additional get->set->put per user inside a lopp
+async fn users_required_actions_add<'a>(admin: &'a KeycloakAdmin<'a>, realm: &str, member: UserRepresentation<'a>, ) -> Result<()> {
+    let mut member = admin.user_get(realm, &member.id.as_ref().unwrap()).await?;
+    member.required_actions = match member.required_actions {
+        None => Some(vec!["CONFIGURE_TOTP".into()]),
+        Some(mut required_actions) => {
+            let totp = "CONFIGURE_TOTP".into();
+            if !required_actions.contains(&totp) {
+                required_actions.push(totp);
+            }
+            Some(required_actions)
+        },
+    };
     Ok(())
 }

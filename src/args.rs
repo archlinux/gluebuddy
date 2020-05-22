@@ -12,11 +12,17 @@ pub struct Args {
     #[structopt(short, long, parse(from_occurrences))]
     pub verbose: u8,
     #[structopt(subcommand)]
-    pub subcommand: Option<SubCommand>,
+    pub command: Command,
 }
 
 #[derive(Debug, StructOpt)]
-pub enum SubCommand {
+pub enum Command {
+    /// Generate and show an execution plan
+    Plan,
+    /// Builds or changes infrastructure
+    Apply,
+    /// Keycloak module commands
+    Keycloak(Action),
     /// Generate shell completions
     #[structopt(name="completions")]
     Completions(Completions),
@@ -26,6 +32,14 @@ pub enum SubCommand {
 pub struct Completions {
     #[structopt(possible_values=&Shell::variants())]
     pub shell: Shell,
+}
+
+#[derive(Debug, StructOpt)]
+pub enum Action {
+    /// Generate and show an execution plan
+    Plan,
+    /// Builds or changes infrastructure
+    Apply
 }
 
 pub fn gen_completions(args: &Completions) -> Result<()> {
