@@ -8,12 +8,16 @@ repository = "https://gitlab.archlinux.org/archlinux/gluebuddy"
 categories = ["command-line-utilities"]
 
 [dependencies]
-keycloak = "10"
-gitlab = "0.1210"
-reqwest = "0.10"
-tokio = { version = "0.2", features = ["full"] }
+keycloak = "12.0"
+gitlab = { git = "file:///home/anthraxx/Projects/anthraxx/rust/rust-gitlab", branch = "master" }
+#gitlab = "0.1308"
+reqwest = "0.11"
+tokio = { version = "1.1", features = ["full"] }
 futures = "0.3"
 anyhow = "1.0"
 log = "0.4"
-env_logger = "0.7"
+env_logger = "0.8"
 structopt = "0.3"
+serde = {version = "1.0", features = ["derive"]}
+strum = "0.20"
+strum_macros = "0.20"

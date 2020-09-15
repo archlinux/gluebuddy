@@ -1,5 +1,5 @@
-use structopt::StructOpt;
 use structopt::clap::{AppSettings, Shell};
+use structopt::StructOpt;
 
 use std::io::stdout;
 
@@ -23,8 +23,10 @@ pub enum Command {
     Apply,
     /// Keycloak module commands
     Keycloak(Action),
+    /// Gitlab module commands
+    Gitlab(Action),
     /// Generate shell completions
-    #[structopt(name="completions")]
+    #[structopt(name = "completions")]
     Completions(Completions),
 }
 
@@ -39,7 +41,7 @@ pub enum Action {
     /// Generate and show an execution plan
     Plan,
     /// Builds or changes infrastructure
-    Apply
+    Apply,
 }
 
 pub fn gen_completions(args: &Completions) -> Result<()> {
