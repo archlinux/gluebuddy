@@ -18,14 +18,17 @@ use log::{debug, info};
 use std::env;
 
 use crate::state::State;
+use crate::state::User;
+use std::sync::{Mutex, Arc};
 
 pub struct Keycloak<'a> {
     admin: KeycloakAdmin<'a>,
     realm: String,
+    state: Arc<Mutex<State>>,
 }
 
-impl Keycloak<'_> {
-    pub async fn new<'a>() -> Result<Keycloak<'a>> {
+impl<'a> Keycloak<'a> {
+    pub async fn new(state: Arc<Mutex<State>>) -> Result<Keycloak<'a>> {
         let username = &env::var("GLUEBUDDY_KEYCLOAK_USERNAME")
             .context("Missing env var GLUEBUDDY_KEYCLOAK_USERNAME")?;
         let password = &env::var("GLUEBUDDY_KEYCLOAK_PASSWORD")
@@ -47,10 +50,11 @@ impl Keycloak<'_> {
         Ok(Keycloak {
             admin,
             realm: realm.to_string(),
+            state,
         })
     }
 
-    pub async fn gather<'a>(&'a self, state: &mut State<'a>) -> Result<()> {
+    pub async fn gather(&self) -> Result<()> {
         let root_groups = vec!["Arch Linux Staff", "External Contributors"];
 
         let all_groups = self
@@ -89,6 +93,7 @@ impl Keycloak<'_> {
         });
 
         let group_members = try_join_all(groups_members).await?;
+        let mut state = self.state.lock().unwrap();
 
         // TODO: avoid duplicates in staff when multiple groups match
         for (group, users) in group_members {
@@ -99,26 +104,26 @@ impl Keycloak<'_> {
                     group_name,
                     user.username.as_ref().unwrap()
                 );
-                match group_name.as_ref() {
+                match group_name {
                     "DevOps" => {
-                        state.staff.push(user.clone());
-                        state.devops.push(user.clone());
+                        state.staff.push(User::new(user.username.as_ref().unwrap().to_string()));
+                        state.devops.push(User::new(user.username.as_ref().unwrap().to_string()));
                     }
                     "Developers" => {
-                        state.staff.push(user.clone());
-                        state.developers.push(user.clone());
+                        state.staff.push(User::new(user.username.as_ref().unwrap().to_string()));
+                        state.developers.push(User::new(user.username.as_ref().unwrap().to_string()));
                     }
                     "Trusted Users" => {
-                        state.staff.push(user.clone());
-                        state.trusted_users.push(user.clone());
+                        state.staff.push(User::new(user.username.as_ref().unwrap().to_string()));
+                        state.trusted_users.push(User::new(user.username.as_ref().unwrap().to_string()));
                     }
                     "Security Team" => {
                         // TODO: do not add reporters
-                        state.staff.push(user.clone());
-                        state.security_team.push(user.clone());
+                        state.staff.push(User::new(user.username.as_ref().unwrap().to_string()));
+                        state.security_team.push(User::new(user.username.as_ref().unwrap().to_string()));
                     }
                     "External Contributors" => {
-                        state.external_contributors.push(user.clone());
+                        state.external_contributors.push(User::new(user.username.as_ref().unwrap().to_string()));
                     }
                     _ => {}
                 }
@@ -128,7 +133,7 @@ impl Keycloak<'_> {
         Ok(())
     }
 
-    pub async fn run<'a>(&self, state: &State<'a>, action: Action) -> Result<()> {
+    pub async fn run(&self, action: Action) -> Result<()> {
         Ok(())
     }
 }

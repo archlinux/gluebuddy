@@ -21,6 +21,7 @@ use structopt::StructOpt;
 use anyhow::Result;
 use env_logger::Env;
 use log::error;
+use std::sync::{Arc, Mutex};
 
 async fn run(args: Args) -> Result<()> {
     /* Early exit for completions */
@@ -32,26 +33,29 @@ async fn run(args: Args) -> Result<()> {
         _ => {}
     }
 
-    let mut state = State::new();
-    //let keycloak_glue = Keycloak::new().await?;
-    let gitlab_glue = GitLabGlue::new().await?;
+    let state = Arc::new(Mutex::new(State::new()));
 
-    //keycloak_glue.gather(&mut state).await?;
-    gitlab_glue.gather(&mut state).await?;
+    let keycloak_glue = Keycloak::new(state.clone()).await?;
+    let gitlab_glue = GitLabGlue::new(state.clone()).await?;
+
+    keycloak_glue.gather().await?;
+    gitlab_glue.gather().await?;
 
     match args.command {
         Command::Completions(_) => {}
         Command::Keycloak(action) => {
-            //keycloak_glue.run(&state, action).await?;
+            keycloak_glue.run(action).await?;
         }
-        Command::Gitlab(action) => gitlab_glue.run(&state, action).await?,
+        Command::Gitlab(action) => {
+            gitlab_glue.run(action).await?
+        },
         Command::Plan => {
-            //keycloak_glue.run(&state, Action::Plan).await?;
-            gitlab_glue.run(&state, Action::Plan).await?;
+            keycloak_glue.run(Action::Plan).await?;
+            gitlab_glue.run(Action::Plan).await?;
         }
         Command::Apply => {
-            //keycloak_glue.run(&state, Action::Apply).await?;
-            gitlab_glue.run(&state, Action::Apply).await?;
+            keycloak_glue.run(Action::Apply).await?;
+            gitlab_glue.run(Action::Apply).await?;
         }
     }
     Ok(())

@@ -23,43 +23,38 @@ use gitlab::api::common::{AccessLevel, VisibilityLevel};
 use gitlab::api::projects::{Projects, FeatureAccessLevel};
 use gitlab::api::groups::members::{GroupMembers, AddGroupMember, RemoveGroupMember};
 use tokio::task;
+use std::sync::{Arc, Mutex};
 
 const MAIN_BRANCH: &str = "main";
 const ALL_TAGS: &str = "*";
 
 pub struct GitLabGlue {
     client: Gitlab,
+    state: Arc<Mutex<State>>,
 }
 
 impl GitLabGlue {
-    pub async fn new() -> Result<GitLabGlue> {
-        task::spawn_blocking(move || create_client()).await?
+    pub async fn new(state: Arc<Mutex<State>>) -> Result<GitLabGlue> {
+        create_client(state)
     }
 
-    pub async fn gather<'a>(&'a self, state: &mut State<'a>) -> Result<()> {
+    pub async fn gather(&self) -> Result<()> {
         Ok(())
     }
 
-    pub async fn run<'a>(&self, state: &State<'a>, action: Action) -> Result<()> {
-        task::spawn_blocking(move || update_gitlab_group_members(&action)).await??;
+    pub async fn run<'a>(&self, action: Action) -> Result<()> {
+        self.update_gitlab_group_members(&action).await?;
+            /*
+        task::spawn_blocking(move || {
+            update_gitlab_group_members(guard, &action)
+        }).await??;
+
+             */
         //task::spawn_blocking(move || update_package_repositories(&action)).await??;
         Ok(())
     }
-}
 
-pub fn create_client() -> Result<GitLabGlue> {
-    let token =
-        &env::var("GLUEBUDDY_GITLAB_TOKEN").context("Missing env var GLUEBUDDY_GITLAB_TOKEN")?;
-    let client = Gitlab::new("gitlab.archlinux.org", token).unwrap();
-    Ok(GitLabGlue { client })
-}
-
-/*
-fn protect_tags(client: &Gitlab, project_id: u64) -> std::result::Result<ProtectedTag, gitlab::api::ApiError<>> {
-}
- */
-
-fn update_gitlab_group_members(action: &Action) -> Result<()> {
+async fn update_gitlab_group_members(&self, action: &Action) -> Result<()> {
     let token =
         &env::var("GLUEBUDDY_GITLAB_TOKEN").context("Missing env var GLUEBUDDY_GITLAB_TOKEN")?;
     let client = Gitlab::new("gitlab.archlinux.org", token).unwrap();
@@ -71,8 +66,17 @@ fn update_gitlab_group_members(action: &Action) -> Result<()> {
         .build()
         .unwrap();
     let members: Vec<GroupMember> = members_endpoint.query(&client).unwrap();
-    for member in members {
-        println!("{} {} {} {}", member.id, member.username, member.email.unwrap_or("-".to_string()), member.access_level);
+    for member in &members {
+        println!("{} {} {} {}", member.id, member.username, member.email.as_ref().unwrap_or(&"-".to_string()), member.access_level);
+    }
+
+    let state = self.state.lock().unwrap();
+    for staff in &state.staff {
+        let member_names = members.iter().map(|e| e.username.clone()).collect::<Vec<_>>();
+        let staff_username = &staff.username;
+        if !member_names.contains(&staff_username) {
+            println!("not in group: {}", staff_username);
+        }
     }
 
     println!("project");
@@ -83,7 +87,7 @@ fn update_gitlab_group_members(action: &Action) -> Result<()> {
         .unwrap();
     let members: Vec<GroupMember> = members_endpoint.query(&client).unwrap();
     for member in members {
-        println!("{} {} {} {}", member.id, member.username, member.email.unwrap_or("-".to_string()), member.access_level);
+        println!("{} {} {} {}", member.id, member.username, member.email.as_ref().unwrap_or(&"-".to_string()), member.access_level);
     }
 
     println!("search");
@@ -129,7 +133,6 @@ fn update_gitlab_group_members(action: &Action) -> Result<()> {
             .build()
             .unwrap();
         gitlab::api::ignore(endpoint).query(&client).unwrap();
-         */
 
         let endpoint = gitlab::api::projects::members::EditProjectMember::builder()
             .project("bot-test/sandbox/lib10000")
@@ -138,9 +141,18 @@ fn update_gitlab_group_members(action: &Action) -> Result<()> {
             .build()
             .unwrap();
         gitlab::api::ignore(endpoint).query(&client).unwrap();
+         */
     }
 
     Ok(())
+}
+}
+
+pub fn create_client(state: Arc<Mutex<State>>) -> Result<GitLabGlue> {
+    let token =
+        &env::var("GLUEBUDDY_GITLAB_TOKEN").context("Missing env var GLUEBUDDY_GITLAB_TOKEN")?;
+    let client = Gitlab::new("gitlab.archlinux.org", token).unwrap();
+    Ok(GitLabGlue { client, state })
 }
 
 fn update_package_repositories(action: &Action) -> Result<()> {
@@ -308,7 +320,7 @@ fn update_package_repositories(action: &Action) -> Result<()> {
             }
              */
 
-            set_project_settings(&client, &project);
+            set_project_settings(&client, &project)?;
         }
     }
 

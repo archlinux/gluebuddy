@@ -1,16 +1,28 @@
 use keycloak::types::UserRepresentation;
 
-pub struct State<'a> {
-    pub staff: Vec<UserRepresentation<'a>>,
-    pub developers: Vec<UserRepresentation<'a>>,
-    pub trusted_users: Vec<UserRepresentation<'a>>,
-    pub devops: Vec<UserRepresentation<'a>>,
-    pub security_team: Vec<UserRepresentation<'a>>,
-    pub external_contributors: Vec<UserRepresentation<'a>>,
+pub struct User {
+    pub username: String,
 }
 
-impl State<'_> {
-    pub fn new<'a>() -> State<'a> {
+impl User {
+    pub fn new(username: String) -> User {
+        User {
+            username,
+        }
+    }
+}
+
+pub struct State {
+    pub staff: Vec<User>,
+    pub developers: Vec<User>,
+    pub trusted_users: Vec<User>,
+    pub devops: Vec<User>,
+    pub security_team: Vec<User>,
+    pub external_contributors: Vec<User>,
+}
+
+impl State {
+    pub fn new() -> State {
         State {
             staff: Vec::new(),
             developers: Vec::new(),
@@ -24,7 +36,6 @@ impl State<'_> {
     pub fn user_may_have_gitlab_access(&self, username: &str) -> bool {
         self.staff.iter()
             .chain(self.external_contributors.iter())
-            .map(|e| e.username.as_ref().unwrap())
-            .any(|e| e.eq(username))
+            .any(|e| e.username.eq(username))
     }
 }
