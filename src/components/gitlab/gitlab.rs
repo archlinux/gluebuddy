@@ -29,7 +29,8 @@ use gitlab::api::groups::members::{AddGroupMember, GroupMembers, RemoveGroupMemb
 use gitlab::api::projects::{FeatureAccessLevel, Projects};
 use gitlab::api::users::ExternalProvider;
 
-const DEFAULT_STAFF_ACCESS_LEVEL: AccessLevel = AccessLevel::Minimal;
+const DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Minimal;
+const DEFAULT_STAFF_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Reporter;
 const DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 
 pub const GITLAB_OWNER: &str = "archceo";
@@ -105,6 +106,7 @@ impl GitLabGlue {
 
     pub async fn run(&self, action: Action) -> Result<()> {
         self.update_gitlab_group_members(&action).await?;
+        self.update_gitlab_staff_group_members(&action).await?;
         self.update_infrastructure_members(&action).await?;
         Ok(())
     }
@@ -125,7 +127,7 @@ impl GitLabGlue {
         for staff in &staff {
             if !gitlab_group_member_names.contains(&staff.username) {
                 if self
-                    .add_group_member(action, &staff, group, DEFAULT_STAFF_ACCESS_LEVEL)
+                    .add_group_member(action, &staff, group, DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL)
                     .await?
                 {
                     summary.add += 1;
@@ -146,7 +148,59 @@ impl GitLabGlue {
                 }
                 Some(user) => {
                     if self
-                        .enforce_group_role(action, user, member, group, DEFAULT_STAFF_ACCESS_LEVEL)
+                        .enforce_group_role(action, user, member, group, DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL)
+                        .await?
+                    {
+                        summary.change += 1;
+                    }
+                }
+            }
+        }
+
+        println!("{}", summary);
+        println!("{}", util::format_separator());
+
+        Ok(())
+    }
+
+    async fn update_gitlab_staff_group_members(&self, action: &Action) -> Result<()> {
+        let group = "archlinux/teams/staff";
+        let archlinux_group_members = self.get_group_members(group).await?;
+
+        let mut summary = PlanSummary::new("GitLab 'Arch Linux/Teams/Staff' group members");
+        let state = self.state.lock().await;
+
+        let gitlab_group_member_names = archlinux_group_members
+            .iter()
+            .map(|e| e.username.clone())
+            .collect::<Vec<_>>();
+
+        let staff = state.staff();
+        for staff in &staff {
+            if !gitlab_group_member_names.contains(&staff.username) {
+                if self
+                    .add_group_member(action, &staff, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
+                    .await?
+                {
+                    summary.add += 1;
+                }
+            }
+        }
+
+        for member in &archlinux_group_members {
+            let user = staff.iter().find(|user| user.username.eq(&member.username));
+            match user {
+                None => {
+                    if self
+                        .remove_group_member(action, &state, member, group)
+                        .await?
+                    {
+                        summary.destroy += 1;
+                    }
+                }
+                Some(user) => {
+                    if self
+                        .enforce_group_role(action, user, member, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
                         .await?
                     {
                         summary.change += 1;
