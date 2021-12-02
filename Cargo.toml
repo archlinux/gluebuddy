@@ -9,8 +9,8 @@ categories = ["command-line-utilities"]
 publish = false
 
 [dependencies]
-keycloak = "12.0"
-gitlab = "0.1400"
+keycloak = "14.0"
+gitlab = "0.1405"
 reqwest = "0.11"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
 futures = "0.3"
@@ -19,8 +19,8 @@ log = "0.4"
 env_logger = "0.9"
 structopt = "0.3"
 serde = {version = "1.0", features = ["derive"]}
-strum = "0.21"
-strum_macros = "0.21"
+strum = "0.23"
+strum_macros = "0.23"
 difference = "2.0"
 term = "0.7"
 itertools = "0.10"

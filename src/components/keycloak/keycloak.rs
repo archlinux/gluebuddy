@@ -21,14 +21,14 @@ use std::sync::Arc;
 use crate::state::State;
 use crate::state::User;
 
-pub struct Keycloak<'a> {
-    admin: KeycloakAdmin<'a>,
+pub struct Keycloak {
+    admin: KeycloakAdmin,
     realm: String,
     state: Arc<Mutex<State>>,
 }
 
-impl<'a> Keycloak<'a> {
-    pub async fn new(state: Arc<Mutex<State>>) -> Result<Keycloak<'a>> {
+impl Keycloak {
+    pub async fn new(state: Arc<Mutex<State>>) -> Result<Keycloak> {
         let username = &env::var("GLUEBUDDY_KEYCLOAK_USERNAME")
             .context("Missing env var GLUEBUDDY_KEYCLOAK_USERNAME")?;
         let password = &env::var("GLUEBUDDY_KEYCLOAK_PASSWORD")
@@ -68,7 +68,7 @@ impl<'a> Keycloak<'a> {
             .collect::<Vec<_>>();
 
         let groups_members = groups.into_iter().flat_map(|group| {
-            let group_name = group.name.as_ref().unwrap().as_ref();
+            let group_name = group.name.as_ref().unwrap();
             info!(
                 "collect members of group {} via {}",
                 group_name,
@@ -119,8 +119,8 @@ impl<'a> Keycloak<'a> {
 
         for (group, users) in group_members {
             for user in users {
-                let group_name = group.name.as_ref().unwrap().as_ref();
-                let path = group.path.as_ref().unwrap().as_ref();
+                let group_name = group.name.as_ref().unwrap();
+                let path = group.path.as_ref().unwrap();
                 debug!(
                     "group {} via {} user {}",
                     group_name,
@@ -145,10 +145,10 @@ impl<'a> Keycloak<'a> {
 }
 
 async fn get_group_members<'a>(
-    admin: &'a KeycloakAdmin<'a>,
+    admin: &'a KeycloakAdmin,
     realm: &'a str,
-    group: GroupRepresentation<'a>,
-) -> Result<(GroupRepresentation<'a>, Vec<UserRepresentation<'a>>)> {
+    group: GroupRepresentation,
+) -> Result<(GroupRepresentation, Vec<UserRepresentation>)> {
     let users = admin
         .realm_groups_with_id_members_get(
             realm,
