@@ -1,3 +1,4 @@
+use crate::components::gitlab::gitlab::GITLAB_OWNER;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Eq, PartialEq, Debug)]
@@ -43,7 +44,7 @@ impl Default for State {
 
 impl State {
     pub fn user_may_have_gitlab_archlinux_group_access(&self, username: &str) -> bool {
-        self.staff().iter().any(|user| user.username.eq(username))
+        self.staff().iter().any(|user| user.username.eq(username)) || username == GITLAB_OWNER
     }
 
     pub fn staff(&self) -> Vec<&User> {

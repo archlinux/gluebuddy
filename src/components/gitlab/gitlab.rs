@@ -15,7 +15,6 @@ use crate::util;
 
 use std::env;
 use std::sync::Arc;
-use itertools::Itertools;
 
 use anyhow::{bail, Context, Result};
 use log::{debug, error, info, trace, warn};
@@ -33,6 +32,7 @@ const DEFAULT_STAFF_ACCESS_LEVEL: AccessLevel = AccessLevel::Minimal;
 const DEVOPS_ACCESS_LEVEL: AccessLevel = AccessLevel::Owner;
 const DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 
+pub const GITLAB_OWNER: &str = "archceo";
 const MAIN_BRANCH: &str = "main";
 const ALL_TAGS: &str = "*";
 
