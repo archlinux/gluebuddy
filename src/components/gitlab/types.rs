@@ -31,8 +31,8 @@ impl Display for PlanSummary {
         }
         write!(
             f,
-            "Plan: {} to add, {} to change, {} to destroy.",
-            self.add, self.change, self.destroy
+            "{} has changed!\nPlan: {} to add, {} to change, {} to destroy.",
+            self.name, self.add, self.change, self.destroy
         )
     }
 }
