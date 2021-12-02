@@ -77,5 +77,5 @@ pub fn format_gitlab_user(username: &str, admin: bool) -> String {
 }
 
 pub fn format_separator() -> String {
-    format!("{}", "-".repeat(72))
+    "-".repeat(72).to_string()
 }
