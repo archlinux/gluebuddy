@@ -328,7 +328,7 @@ impl GitLabGlue {
     ) -> Result<bool> {
         let staff_username = &user.username;
         if user.gitlab_id.is_none() {
-            warn!(
+            debug!(
                 "Skip adding {} to GitLab group: no GitLab user found",
                 staff_username
             );
@@ -538,7 +538,7 @@ impl GitLabGlue {
     ) -> Result<bool> {
         let staff_username = &user.username;
         if user.gitlab_id.is_none() {
-            warn!(
+            debug!(
                 "Skip adding {} to GitLab project: no GitLab user found",
                 staff_username
             );
