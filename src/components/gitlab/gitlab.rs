@@ -105,13 +105,14 @@ impl GitLabGlue {
     }
 
     pub async fn run(&self, action: Action) -> Result<()> {
-        self.update_gitlab_group_members(&action).await?;
-        self.update_gitlab_staff_group_members(&action).await?;
-        self.update_infrastructure_members(&action).await?;
+        self.update_archlinux_group_members(&action).await?;
+        self.update_staff_group_members(&action).await?;
+        self.update_devops_group_members(&action).await?;
+        self.update_infrastructure_project_members(&action).await?;
         Ok(())
     }
 
-    async fn update_gitlab_group_members(&self, action: &Action) -> Result<()> {
+    async fn update_archlinux_group_members(&self, action: &Action) -> Result<()> {
         let group = "archlinux";
         let archlinux_group_members = self.get_group_members(group).await?;
 
@@ -169,7 +170,7 @@ impl GitLabGlue {
         Ok(())
     }
 
-    async fn update_gitlab_staff_group_members(&self, action: &Action) -> Result<()> {
+    async fn update_staff_group_members(&self, action: &Action) -> Result<()> {
         let group = "archlinux/teams/staff";
         let archlinux_group_members = self.get_group_members(group).await?;
 
@@ -227,22 +228,7 @@ impl GitLabGlue {
         Ok(())
     }
 
-    async fn update_infrastructure_members(&self, action: &Action) -> Result<()> {
-        let project = "archlinux/infrastructure";
-        let project_members = self.get_project_members(project).await?;
-
-        let mut summary = PlanSummary::new("GitLab 'Arch Linux/Infrastructure' project members");
-        let state = self.state.lock().await;
-
-        for member in &project_members {
-            if self.remove_project_member(action, member, project).await? {
-                summary.destroy += 1;
-            }
-        }
-
-        println!("{}", summary);
-        println!("{}", util::format_separator());
-
+    async fn update_devops_group_members(&self, action: &Action) -> Result<()> {
         let mut summary = PlanSummary::new("GitLab 'Arch Linux/Teams/DevOps' group members");
         let devops_group = "archlinux/teams/devops";
         let group_members = self.get_group_members(devops_group).await?;
@@ -299,6 +285,24 @@ impl GitLabGlue {
                         }
                     }
                 },
+            }
+        }
+
+        println!("{}", summary);
+        println!("{}", util::format_separator());
+
+        Ok(())
+    }
+
+    async fn update_infrastructure_project_members(&self, action: &Action) -> Result<()> {
+        let project = "archlinux/infrastructure";
+        let project_members = self.get_project_members(project).await?;
+
+        let mut summary = PlanSummary::new("GitLab 'Arch Linux/Infrastructure' project members");
+
+        for member in &project_members {
+            if self.remove_project_member(action, member, project).await? {
+                summary.destroy += 1;
             }
         }
 
