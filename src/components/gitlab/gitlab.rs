@@ -148,7 +148,13 @@ impl GitLabGlue {
                 }
                 Some(user) => {
                     if self
-                        .enforce_group_role(action, user, member, group, DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL)
+                        .enforce_group_role(
+                            action,
+                            user,
+                            member,
+                            group,
+                            DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL,
+                        )
                         .await?
                     {
                         summary.change += 1;
@@ -200,7 +206,13 @@ impl GitLabGlue {
                 }
                 Some(user) => {
                     if self
-                        .enforce_group_role(action, user, member, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
+                        .enforce_group_role(
+                            action,
+                            user,
+                            member,
+                            group,
+                            DEFAULT_STAFF_GROUP_ACCESS_LEVEL,
+                        )
                         .await?
                     {
                         summary.change += 1;
