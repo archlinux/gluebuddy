@@ -13,6 +13,7 @@ use crate::components::gitlab::types::*;
 
 use crate::util;
 
+use itertools::Itertools;
 use std::env;
 use std::sync::Arc;
 
@@ -29,7 +30,6 @@ use gitlab::api::projects::{FeatureAccessLevel, Projects};
 use gitlab::api::users::ExternalProvider;
 
 const DEFAULT_STAFF_ACCESS_LEVEL: AccessLevel = AccessLevel::Minimal;
-const DEVOPS_ACCESS_LEVEL: AccessLevel = AccessLevel::Owner;
 const DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 
 pub const GITLAB_OWNER: &str = "archceo";
@@ -124,7 +124,10 @@ impl GitLabGlue {
         let staff = state.staff();
         for staff in &staff {
             if !gitlab_group_member_names.contains(&staff.username) {
-                if self.add_group_member(action, &staff, group).await? {
+                if self
+                    .add_group_member(action, &staff, group, DEFAULT_STAFF_ACCESS_LEVEL)
+                    .await?
+                {
                     summary.add += 1;
                 }
             }
@@ -142,7 +145,10 @@ impl GitLabGlue {
                     }
                 }
                 Some(user) => {
-                    if self.enforce_group_role(action, user, member, group).await? {
+                    if self
+                        .enforce_group_role(action, user, member, group, DEFAULT_STAFF_ACCESS_LEVEL)
+                        .await?
+                    {
                         summary.change += 1;
                     }
                 }
@@ -162,16 +168,34 @@ impl GitLabGlue {
         let mut summary = PlanSummary::new("GitLab 'Arch Linux/Infrastructure' project members");
         let state = self.state.lock().await;
 
-        let project_member_names = project_members
+        for member in &project_members {
+            if self.remove_project_member(action, member, project).await? {
+                summary.destroy += 1;
+            }
+        }
+
+        println!("{}", summary);
+        println!("{}", util::format_separator());
+
+        let mut summary = PlanSummary::new("GitLab 'Arch Linux/Teams/DevOps' group members");
+        let devops_group = "archlinux/teams/devops";
+        let group_members = self.get_group_members(devops_group).await?;
+
+        let group_member_names = group_members
             .iter()
             .map(|e| e.username.clone())
             .collect::<Vec<_>>();
 
         let devops = state.devops();
         for staff in &devops {
-            if !project_member_names.contains(&staff.username) {
+            if !group_member_names.contains(&staff.username) {
                 if self
-                    .add_project_member(action, &staff, project, DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL)
+                    .add_group_member(
+                        action,
+                        &staff,
+                        devops_group,
+                        DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL,
+                    )
                     .await?
                 {
                     summary.add += 1;
@@ -179,39 +203,36 @@ impl GitLabGlue {
             }
         }
 
-        for member in &project_members {
+        for member in &group_members {
             let user = devops
                 .iter()
                 .find(|user| user.username.eq(&member.username));
             match user {
                 None => {
-                    match util::access_level_from_u64(member.access_level) {
-                        // TODO: some external contributors are reporter
-                        AccessLevel::Guest => {}
-                        AccessLevel::Reporter => {}
-                        _ => {
-                            if self
-                                .remove_project_member(action, member, project)
-                                .await?
-                            {
-                                summary.destroy += 1;
-                            }
-                        }
+                    if self
+                        .remove_group_member(action, &state, member, devops_group)
+                        .await?
+                    {
+                        summary.destroy += 1;
                     }
                 }
-                Some(user) => {
-                    match util::access_level_from_u64(member.access_level) {
-                        DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL => {}
-                        _ => {
-                            if self
-                                .edit_project_member(action, &user, member, project, DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL)
-                                .await?
-                            {
-                                summary.change += 1;
-                            }
+                Some(user) => match util::access_level_from_u64(member.access_level) {
+                    DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL => {}
+                    _ => {
+                        if self
+                            .enforce_group_role(
+                                action,
+                                user,
+                                member,
+                                devops_group,
+                                DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL,
+                            )
+                            .await?
+                        {
+                            summary.change += 1;
                         }
                     }
-                }
+                },
             }
         }
 
@@ -244,7 +265,13 @@ impl GitLabGlue {
         Ok(members)
     }
 
-    async fn add_group_member(&self, action: &Action, user: &User, group: &str) -> Result<bool> {
+    async fn add_group_member(
+        &self,
+        action: &Action,
+        user: &User,
+        group: &str,
+        access_level: AccessLevel,
+    ) -> Result<bool> {
         let staff_username = &user.username;
         if user.gitlab_id.is_none() {
             warn!(
@@ -256,11 +283,6 @@ impl GitLabGlue {
         let gitlab_id = user
             .gitlab_id
             .with_context(|| format!("Failed to unwrap GitLab user for {}", staff_username))?;
-
-        let access_level = match user.is_devops() {
-            true => DEVOPS_ACCESS_LEVEL,
-            false => DEFAULT_STAFF_ACCESS_LEVEL,
-        };
 
         debug!("Adding user {} to GitLab group '{}'", user.username, group);
         util::print_diff(
@@ -328,12 +350,8 @@ impl GitLabGlue {
         user: &User,
         group_member: &GitLabMember,
         group: &str,
+        expected_access_level: AccessLevel,
     ) -> Result<bool> {
-        let expected_access_level = match user.is_devops() {
-            true => DEVOPS_ACCESS_LEVEL,
-            false => DEFAULT_STAFF_ACCESS_LEVEL,
-        };
-
         let access_level = util::access_level_from_u64(group_member.access_level);
         if access_level.eq(&expected_access_level) {
             trace!(
@@ -481,7 +499,12 @@ impl GitLabGlue {
             user.username, project
         );
         util::print_diff(
-            util::format_gitlab_member_access(project, &user.username, util::access_level_from_u64(member.access_level)).as_str(),
+            util::format_gitlab_member_access(
+                project,
+                &user.username,
+                util::access_level_from_u64(member.access_level),
+            )
+            .as_str(),
             util::format_gitlab_member_access(project, &user.username, access_level).as_str(),
         )?;
         match action {
