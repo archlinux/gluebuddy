@@ -1,4 +1,3 @@
-use crate::components::gitlab::gitlab::GITLAB_OWNER;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Eq, PartialEq, Debug)]
@@ -23,6 +22,12 @@ impl User {
             .any(|group| group.starts_with("/Arch Linux Staff/"))
     }
 
+    pub fn is_external_contributor(&self) -> bool {
+        self.groups
+            .iter()
+            .any(|group| group.starts_with("/External Contributors"))
+    }
+
     pub fn is_devops(&self) -> bool {
         self.groups
             .iter()
@@ -43,12 +48,15 @@ impl Default for State {
 }
 
 impl State {
-    pub fn user_may_have_gitlab_archlinux_group_access(&self, username: &str) -> bool {
-        self.staff().iter().any(|user| user.username.eq(username)) || username == GITLAB_OWNER
-    }
-
     pub fn staff(&self) -> Vec<&User> {
         self.users.values().filter(|user| user.is_staff()).collect()
+    }
+
+    pub fn staff_with_externals(&self) -> Vec<&User> {
+        self.users
+            .values()
+            .filter(|user| user.is_staff() || user.is_external_contributor())
+            .collect()
     }
 
     pub fn devops(&self) -> Vec<&User> {

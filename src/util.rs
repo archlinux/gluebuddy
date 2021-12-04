@@ -1,6 +1,8 @@
+use crate::components::gitlab::types::{ProjectFeatureAccessLevel, GroupBranchProtection};
 use anyhow::{Context, Result};
 use difference::{Changeset, Difference};
 use gitlab::api::common::AccessLevel;
+use gitlab::api::groups::BranchProtection;
 
 pub fn print_diff(text1: &str, text2: &str) -> Result<()> {
     let Changeset { diffs, .. } = Changeset::new(text1, text2, "\n");
@@ -73,6 +75,23 @@ pub fn format_gitlab_user(username: &str, admin: bool) -> String {
         \tadmin    = {}\n\
         }}",
         username, admin,
+    )
+}
+
+pub fn format_gitlab_project_settings(
+    namespace: &str,
+    request_access_enabled: bool,
+    snippets_access_level: ProjectFeatureAccessLevel,
+) -> String {
+    format!(
+        "gitlab_project_setting {{\n\
+        \tnamespace              = {}\n\
+        \trequest_access_enabled = {}\n\
+        \tsnippets_access_level  = {}\n\
+        }}",
+        namespace,
+        request_access_enabled,
+        snippets_access_level.as_str(),
     )
 }
 

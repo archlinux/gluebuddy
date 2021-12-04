@@ -1,9 +1,11 @@
 use serde::Deserialize;
-
+use serde_repr::*;
 use gitlab::api::common::AccessLevel;
 use std::fmt::{self, Display, Formatter};
 use strum::VariantNames;
-use strum_macros::{EnumString, EnumVariantNames, ToString};
+use strum_macros::{EnumString, EnumVariantNames};
+use gitlab::api::groups::BranchProtection;
+use gitlab::api::projects::FeatureAccessLevel;
 
 #[derive(Debug, Deserialize)]
 pub struct PlanSummary {
@@ -41,6 +43,11 @@ impl Display for PlanSummary {
 pub struct Group {
     pub id: u64,
     pub name: String,
+    pub full_name: String,
+    pub path: String,
+    pub full_path: String,
+    pub request_access_enabled: bool,
+    pub default_branch_protection: GroupBranchProtection,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Deserialize)]
@@ -77,12 +84,48 @@ pub enum ProjectFeatureAccessLevel {
 }
 
 impl ProjectFeatureAccessLevel {
-    /// The variable type query parameter.
-    pub(crate) fn as_str(self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         match self {
             Self::Disabled => "disabled",
             Self::Private => "private",
             Self::Enabled => "enabled",
+        }
+    }
+
+    pub fn as_gitlab_type(self) -> FeatureAccessLevel {
+        match self {
+            Self::Disabled => FeatureAccessLevel::Disabled,
+            Self::Private => FeatureAccessLevel::Private,
+            Self::Enabled => FeatureAccessLevel::Enabled,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Serialize_repr, Deserialize_repr)]
+#[repr(u8)]
+pub enum GroupBranchProtection {
+    /// Developers and maintainers may push, force push, and delete branches.
+    None = 0,
+    /// Developers and maintainers may push branches.
+    Partial = 1,
+    /// Maintainers may push branches.
+    Full = 2,
+}
+
+impl GroupBranchProtection {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Partial => "partial",
+            Self::Full => "full",
+        }
+    }
+
+    pub fn as_gitlab_type(self) -> BranchProtection {
+        match self {
+            Self::None => BranchProtection::None,
+            Self::Partial => BranchProtection::Partial,
+            Self::Full => BranchProtection::Full,
         }
     }
 }
@@ -91,6 +134,9 @@ impl ProjectFeatureAccessLevel {
 pub struct GroupProjects {
     pub id: u64,
     pub name: String,
+    pub name_with_namespace: String,
+    pub path: String,
+    pub path_with_namespace: String,
     pub visibility: ProjectVisibilityLevel,
     pub request_access_enabled: bool,
     pub container_registry_enabled: bool,
