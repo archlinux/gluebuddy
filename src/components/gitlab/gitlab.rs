@@ -856,6 +856,16 @@ fn is_archlinux_bot(member: &GitLabMember) -> bool {
     if member.username.eq(GITLAB_BOT) {
         return true;
     }
+    // TODO: find a better way for project token users
+    // This is not nicely maintainable nor safe to do by regex
+    if vec![
+        "project_10185_bot2".to_string(),
+        "project_19591_bot".to_string(),
+    ]
+    .contains(&member.username)
+    {
+        return true;
+    }
     false
 }
 
