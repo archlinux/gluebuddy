@@ -76,4 +76,37 @@ impl State {
             })
             .next()
     }
+
+    pub fn staff_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
+        self.staff()
+            .into_iter()
+            .filter(|user| {
+                user.gitlab_id
+                    .map(|id| id.eq(&gitlab_id))
+                    .unwrap_or_else(|| false)
+            })
+            .next()
+    }
+
+    pub fn staff_with_externals_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
+        self.staff_with_externals()
+            .into_iter()
+            .filter(|user| {
+                user.gitlab_id
+                    .map(|id| id.eq(&gitlab_id))
+                    .unwrap_or_else(|| false)
+            })
+            .next()
+    }
+
+    pub fn devops_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
+        self.devops()
+            .into_iter()
+            .filter(|user| {
+                user.gitlab_id
+                    .map(|id| id.eq(&gitlab_id))
+                    .unwrap_or_else(|| false)
+            })
+            .next()
+    }
 }

@@ -1,11 +1,11 @@
+use gitlab::api::common::AccessLevel;
+use gitlab::api::groups::BranchProtection;
+use gitlab::api::projects::FeatureAccessLevel;
 use serde::Deserialize;
 use serde_repr::*;
-use gitlab::api::common::AccessLevel;
 use std::fmt::{self, Display, Formatter};
 use strum::VariantNames;
 use strum_macros::{EnumString, EnumVariantNames};
-use gitlab::api::groups::BranchProtection;
-use gitlab::api::projects::FeatureAccessLevel;
 
 #[derive(Debug, Deserialize)]
 pub struct PlanSummary {

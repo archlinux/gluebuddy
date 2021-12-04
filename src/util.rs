@@ -1,4 +1,4 @@
-use crate::components::gitlab::types::{ProjectFeatureAccessLevel, GroupBranchProtection};
+use crate::components::gitlab::types::{GroupBranchProtection, ProjectFeatureAccessLevel};
 use anyhow::{Context, Result};
 use difference::{Changeset, Difference};
 use gitlab::api::common::AccessLevel;

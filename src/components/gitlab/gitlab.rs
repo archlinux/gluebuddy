@@ -25,10 +25,10 @@ use gitlab::api::{AsyncQuery, Query};
 use gitlab::{AsyncGitlab, Gitlab, GitlabBuilder};
 
 use gitlab::api::common::{AccessLevel, VisibilityLevel};
-use gitlab::api::groups::BranchProtection;
 use gitlab::api::groups::members::{AddGroupMember, GroupMembers, RemoveGroupMember};
 use gitlab::api::groups::projects::GroupProjectsOrderBy;
 use gitlab::api::groups::subgroups::GroupSubgroupsOrderBy;
+use gitlab::api::groups::BranchProtection;
 use gitlab::api::projects::{FeatureAccessLevel, Projects};
 use gitlab::api::users::ExternalProvider;
 use std::future::Future;
@@ -131,8 +131,6 @@ impl GitLabGlue {
         let mut to_visit = vec![root];
 
         let state = self.state.lock().await;
-        let staff = state.staff();
-        let staff_with_externals = state.staff_with_externals();
 
         while !to_visit.is_empty() {
             match to_visit.pop() {
@@ -153,16 +151,10 @@ impl GitLabGlue {
                             continue;
                         }
 
-                        let user = staff.iter().find(|user| user.username.eq(&member.username));
-                        match user {
+                        match state.staff_from_gitlab_id(member.id) {
                             None => {
                                 if self
-                                    .remove_group_member(
-                                        action,
-                                        &state,
-                                        member,
-                                        &group.full_path,
-                                    )
+                                    .remove_group_member(action, &state, member, &group.full_path)
                                     .await?
                                 {
                                     summary.destroy += 1;
@@ -216,10 +208,7 @@ impl GitLabGlue {
                                 continue;
                             }
 
-                            let user = staff_with_externals
-                                .iter()
-                                .find(|user| user.username.eq(&member.username));
-                            match user {
+                            match state.staff_with_externals_from_gitlab_id(member.id) {
                                 None => {
                                     if self
                                         .remove_project_member(
@@ -271,8 +260,7 @@ impl GitLabGlue {
             .map(|e| e.username.clone())
             .collect::<Vec<_>>();
 
-        let staff = state.staff();
-        for staff in &staff {
+        for staff in state.staff() {
             if !gitlab_group_member_names.contains(&staff.username) {
                 if self
                     .add_group_member(action, &staff, group, DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL)
@@ -287,8 +275,7 @@ impl GitLabGlue {
             if is_archlinux_bot(&member) {
                 continue;
             }
-            let user = staff.iter().find(|user| user.username.eq(&member.username));
-            match user {
+            match state.staff_from_gitlab_id(member.id) {
                 None => {
                     if self
                         .remove_group_member(action, &state, member, group)
@@ -332,8 +319,7 @@ impl GitLabGlue {
             .map(|e| e.username.clone())
             .collect::<Vec<_>>();
 
-        let staff = state.staff();
-        for staff in &staff {
+        for staff in state.staff() {
             if !gitlab_group_member_names.contains(&staff.username) {
                 if self
                     .add_group_member(action, &staff, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
@@ -348,8 +334,7 @@ impl GitLabGlue {
             if is_archlinux_bot(&member) {
                 continue;
             }
-            let user = staff.iter().find(|user| user.username.eq(&member.username));
-            match user {
+            match state.staff_from_gitlab_id(member.id) {
                 None => {
                     if self
                         .remove_group_member(action, &state, member, group)
@@ -392,8 +377,7 @@ impl GitLabGlue {
             .collect::<Vec<_>>();
 
         let state = self.state.lock().await;
-        let devops = state.devops();
-        for staff in &devops {
+        for staff in state.devops() {
             if !group_member_names.contains(&staff.username) {
                 if self
                     .add_group_member(
@@ -413,10 +397,7 @@ impl GitLabGlue {
             if is_archlinux_bot(&member) {
                 continue;
             }
-            let user = devops
-                .iter()
-                .find(|user| user.username.eq(&member.username));
-            match user {
+            match state.devops_from_gitlab_id(member.id) {
                 None => {
                     if self
                         .remove_group_member(action, &state, member, devops_group)
