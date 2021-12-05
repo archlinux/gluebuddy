@@ -44,7 +44,7 @@ impl Keycloak {
             "acquire API token for keycloak {} using realm {}",
             url, realm
         );
-        let token = KeycloakAdminToken::acquire(url, username, password, &client).await?;
+        let token = KeycloakAdminToken::acquire_custom_realm(url, username, password, "archlinux", username, "client_credentials", &client).await?;
         let admin = KeycloakAdmin::new(url, token, client);
 
         Ok(Keycloak {
