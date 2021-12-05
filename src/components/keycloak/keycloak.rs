@@ -6,7 +6,7 @@
 use crate::args::Action;
 
 use keycloak::types::{CredentialRepresentation, GroupRepresentation, UserRepresentation};
-use keycloak::{KeycloakAdmin, KeycloakAdminToken};
+use keycloak::{KeycloakAdmin, KeycloakAdminToken, KeycloakError};
 use reqwest::Client;
 
 use futures::future::try_join_all;
@@ -14,6 +14,7 @@ use futures::future::try_join_all;
 use anyhow::{Context, Result};
 use log::{debug, info};
 use tokio::sync::Mutex;
+use serde_json::json;
 
 use std::env;
 use std::sync::Arc;
@@ -44,7 +45,8 @@ impl Keycloak {
             "acquire API token for keycloak {} using realm {}",
             url, realm
         );
-        let token = KeycloakAdminToken::acquire(url, username, password, &client).await?;
+
+        let token = Self::acquire_custom_realm(url, username, password, "archlinux", username, "client_credentials", &client).await?;
         let admin = KeycloakAdmin::new(url, token, client);
 
         Ok(Keycloak {
@@ -52,6 +54,47 @@ impl Keycloak {
             realm: realm.to_string(),
             state,
         })
+    }
+
+    async fn acquire_custom_realm(
+        url: &str,
+        username: &str,
+        password: &str,
+        realm: &str,
+        client_id: &str,
+        grant_type: &str,
+        client: &reqwest::Client,
+    ) -> Result<KeycloakAdminToken, KeycloakError> {
+        let response = client
+            .post(&format!(
+                "{}/auth/realms/{}/protocol/openid-connect/token",
+                url, realm
+            ))
+            .form(&json!({
+                "username": username,
+                "password": password,
+                "client_id": client_id,
+                "client_secret": password,
+                "grant_type": grant_type
+            }))
+            .send()
+            .await?;
+
+        Ok(Self::error_check(response).await?.json().await?)
+    }
+
+    async fn error_check(response: reqwest::Response) -> Result<reqwest::Response, KeycloakError> {
+        if !response.status().is_success() {
+            let status = response.status().into();
+            let text = response.text().await?;
+            return Err(KeycloakError::HttpFailure {
+                status,
+                body: serde_json::from_str(&text).ok(),
+                text,
+            });
+        }
+
+        Ok(response)
     }
 
     pub async fn gather(&self) -> Result<()> {
@@ -139,7 +182,7 @@ impl Keycloak {
         Ok(())
     }
 
-    pub async fn run(&self, action: Action) -> Result<()> {
+    pub async fn run(&self, _action: Action) -> Result<()> {
         Ok(())
     }
 }
