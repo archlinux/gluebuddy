@@ -13,7 +13,6 @@ use crate::components::gitlab::types::*;
 
 use crate::util;
 
-use itertools::Itertools;
 use std::env;
 use std::sync::Arc;
 
@@ -24,14 +23,10 @@ use tokio::sync::{Mutex, MutexGuard};
 use gitlab::api::{AsyncQuery, Query};
 use gitlab::{AsyncGitlab, Gitlab, GitlabBuilder};
 
-use gitlab::api::common::{AccessLevel, VisibilityLevel};
-use gitlab::api::groups::members::{AddGroupMember, GroupMembers, RemoveGroupMember};
+use gitlab::api::common::AccessLevel;
 use gitlab::api::groups::projects::GroupProjectsOrderBy;
 use gitlab::api::groups::subgroups::GroupSubgroupsOrderBy;
-use gitlab::api::groups::BranchProtection;
-use gitlab::api::projects::{FeatureAccessLevel, Projects};
 use gitlab::api::users::ExternalProvider;
-use std::future::Future;
 
 const DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Minimal;
 const DEFAULT_STAFF_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Reporter;
@@ -543,7 +538,7 @@ impl GitLabGlue {
     async fn remove_group_member<'a>(
         &self,
         action: &Action,
-        state: &MutexGuard<'a, State>,
+        _state: &MutexGuard<'a, State>,
         member: &GitLabMember,
         group: &str,
     ) -> Result<bool> {

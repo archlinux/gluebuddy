@@ -5,7 +5,7 @@
 
 use crate::args::Action;
 
-use keycloak::types::{CredentialRepresentation, GroupRepresentation, UserRepresentation};
+use keycloak::types::{GroupRepresentation, UserRepresentation};
 use keycloak::{KeycloakAdmin, KeycloakAdminToken, KeycloakError};
 use reqwest::Client;
 
@@ -117,9 +117,7 @@ impl Keycloak {
                 group_name,
                 group.path.as_ref().unwrap()
             );
-            vec![Box::pin(get_group_members(
-                &self.admin,
-                &self.realm,
+            vec![Box::pin(self.get_group_members(
                 group.clone(),
             ))]
             .into_iter()
@@ -129,9 +127,7 @@ impl Keycloak {
                     sub_group.name.as_ref().unwrap(),
                     sub_group.path.as_ref().unwrap()
                 );
-                Box::pin(get_group_members(
-                    &self.admin,
-                    &self.realm,
+                Box::pin(self.get_group_members(
                     sub_group.clone(),
                 ))
             }))
@@ -148,9 +144,7 @@ impl Keycloak {
                             sub_group.name.as_ref().unwrap(),
                             sub_group.path.as_ref().unwrap(),
                         );
-                        Box::pin(get_group_members(
-                            &self.admin,
-                            &self.realm,
+                        Box::pin(self.get_group_members(
                             sub_group.clone(),
                         ))
                     }),
@@ -185,21 +179,20 @@ impl Keycloak {
     pub async fn run(&self, _action: Action) -> Result<()> {
         Ok(())
     }
-}
 
-async fn get_group_members<'a>(
-    admin: &'a KeycloakAdmin,
-    realm: &'a str,
-    group: GroupRepresentation,
-) -> Result<(GroupRepresentation, Vec<UserRepresentation>)> {
-    let users = admin
-        .realm_groups_with_id_members_get(
-            realm,
-            group.id.as_ref().unwrap().as_ref(),
-            None,
-            None,
-            None,
-        )
-        .await?;
-    Ok((group, users))
+    async fn get_group_members(
+        &self,
+        group: GroupRepresentation,
+    ) -> Result<(GroupRepresentation, Vec<UserRepresentation>)> {
+        let users = self.admin
+            .realm_groups_with_id_members_get(
+                &self.realm,
+                group.id.as_ref().unwrap().as_ref(),
+                None,
+                None,
+                None,
+            )
+            .await?;
+        Ok((group, users))
+    }
 }

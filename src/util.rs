@@ -1,8 +1,7 @@
-use crate::components::gitlab::types::{GroupBranchProtection, ProjectFeatureAccessLevel};
+use crate::components::gitlab::types::ProjectFeatureAccessLevel;
 use anyhow::{Context, Result};
 use difference::{Changeset, Difference};
 use gitlab::api::common::AccessLevel;
-use gitlab::api::groups::BranchProtection;
 
 pub fn print_diff(text1: &str, text2: &str) -> Result<()> {
     let Changeset { diffs, .. } = Changeset::new(text1, text2, "\n");
