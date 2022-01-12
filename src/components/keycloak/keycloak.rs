@@ -13,8 +13,8 @@ use futures::future::try_join_all;
 
 use anyhow::{Context, Result};
 use log::{debug, info};
-use tokio::sync::Mutex;
 use serde_json::json;
+use tokio::sync::Mutex;
 
 use std::env;
 use std::sync::Arc;
@@ -46,7 +46,16 @@ impl Keycloak {
             url, realm
         );
 
-        let token = Self::acquire_custom_realm(url, username, password, "archlinux", username, "client_credentials", &client).await?;
+        let token = Self::acquire_custom_realm(
+            url,
+            username,
+            password,
+            "archlinux",
+            username,
+            "client_credentials",
+            &client,
+        )
+        .await?;
         let admin = KeycloakAdmin::new(url, token, client);
 
         Ok(Keycloak {
@@ -117,38 +126,32 @@ impl Keycloak {
                 group_name,
                 group.path.as_ref().unwrap()
             );
-            vec![Box::pin(self.get_group_members(
-                group.clone(),
-            ))]
-            .into_iter()
-            .chain(group.sub_groups.as_ref().unwrap().iter().map(|sub_group| {
-                info!(
-                    "collect members of sub group {} via {}",
-                    sub_group.name.as_ref().unwrap(),
-                    sub_group.path.as_ref().unwrap()
-                );
-                Box::pin(self.get_group_members(
-                    sub_group.clone(),
-                ))
-            }))
-            .chain(
-                group
-                    .sub_groups
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .flat_map(|sub_group| sub_group.sub_groups.as_ref().unwrap())
-                    .map(|sub_group| {
-                        info!(
-                            "collect members of sub group {} via {}",
-                            sub_group.name.as_ref().unwrap(),
-                            sub_group.path.as_ref().unwrap(),
-                        );
-                        Box::pin(self.get_group_members(
-                            sub_group.clone(),
-                        ))
-                    }),
-            )
+            vec![Box::pin(self.get_group_members(group.clone()))]
+                .into_iter()
+                .chain(group.sub_groups.as_ref().unwrap().iter().map(|sub_group| {
+                    info!(
+                        "collect members of sub group {} via {}",
+                        sub_group.name.as_ref().unwrap(),
+                        sub_group.path.as_ref().unwrap()
+                    );
+                    Box::pin(self.get_group_members(sub_group.clone()))
+                }))
+                .chain(
+                    group
+                        .sub_groups
+                        .as_ref()
+                        .unwrap()
+                        .iter()
+                        .flat_map(|sub_group| sub_group.sub_groups.as_ref().unwrap())
+                        .map(|sub_group| {
+                            info!(
+                                "collect members of sub group {} via {}",
+                                sub_group.name.as_ref().unwrap(),
+                                sub_group.path.as_ref().unwrap(),
+                            );
+                            Box::pin(self.get_group_members(sub_group.clone()))
+                        }),
+                )
         });
 
         let group_members = try_join_all(groups_members).await?;
@@ -184,7 +187,8 @@ impl Keycloak {
         &self,
         group: GroupRepresentation,
     ) -> Result<(GroupRepresentation, Vec<UserRepresentation>)> {
-        let users = self.admin
+        let users = self
+            .admin
             .realm_groups_with_id_members_get(
                 &self.realm,
                 group.id.as_ref().unwrap().as_ref(),
