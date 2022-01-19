@@ -13,9 +13,9 @@ use components::keycloak::Keycloak;
 use std::sync::Arc;
 
 use anyhow::Result;
+use clap::Parser;
 use env_logger::Env;
 use log::error;
-use structopt::StructOpt;
 use tokio::sync::Mutex;
 
 async fn run(args: Args) -> Result<()> {
@@ -38,10 +38,10 @@ async fn run(args: Args) -> Result<()> {
 
     match args.command {
         Command::Completions(_) => {}
-        Command::Keycloak(action) => {
+        Command::Keycloak { action } => {
             keycloak_glue.run(action).await?;
         }
-        Command::Gitlab(action) => gitlab_glue.run(action).await?,
+        Command::Gitlab { action } => gitlab_glue.run(action).await?,
         Command::Plan => {
             keycloak_glue.run(Action::Plan).await?;
             gitlab_glue.run(Action::Plan).await?;
@@ -56,7 +56,7 @@ async fn run(args: Args) -> Result<()> {
 
 #[tokio::main]
 async fn main() {
-    let args = Args::from_args();
+    let args = Args::parse();
 
     let logging = match args.verbose {
         0 => "info",
