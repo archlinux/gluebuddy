@@ -256,13 +256,12 @@ impl GitLabGlue {
             .collect::<Vec<_>>();
 
         for staff in state.staff() {
-            if !gitlab_group_member_names.contains(&staff.username) {
-                if self
+            if !gitlab_group_member_names.contains(&staff.username)
+                && self
                     .add_group_member(action, &staff, group, DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL)
                     .await?
-                {
-                    summary.add += 1;
-                }
+            {
+                summary.add += 1;
             }
         }
 
@@ -315,13 +314,12 @@ impl GitLabGlue {
             .collect::<Vec<_>>();
 
         for staff in state.staff() {
-            if !gitlab_group_member_names.contains(&staff.username) {
-                if self
+            if !gitlab_group_member_names.contains(&staff.username)
+                && self
                     .add_group_member(action, &staff, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
                     .await?
-                {
-                    summary.add += 1;
-                }
+            {
+                summary.add += 1;
             }
         }
 
@@ -373,8 +371,8 @@ impl GitLabGlue {
 
         let state = self.state.lock().await;
         for staff in state.devops() {
-            if !group_member_names.contains(&staff.username) {
-                if self
+            if !group_member_names.contains(&staff.username)
+                && self
                     .add_group_member(
                         action,
                         &staff,
@@ -382,9 +380,8 @@ impl GitLabGlue {
                         DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL,
                     )
                     .await?
-                {
-                    summary.add += 1;
-                }
+            {
+                summary.add += 1;
             }
         }
 
