@@ -17,5 +17,5 @@ test:
     paths:
       - target/release/gluebuddy
   script:
-    - cargo build --release
-    - cargo test --release
+    - cargo build --release --locked
+    - cargo test --release --locked
