@@ -27,3 +27,10 @@ audit:
   script:
     - cargo audit
       --ignore RUSTSEC-2020-0159 # `chrono` localtime_r segfault
+
+clippy:
+  stage: test
+  before_script:
+    - rustup component add clippy
+  script:
+    - cargo clippy --all -- -D warnings
