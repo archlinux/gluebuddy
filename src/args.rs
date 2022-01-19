@@ -1,50 +1,70 @@
-use structopt::clap::{AppSettings, Shell};
-use structopt::StructOpt;
+use clap::{AppSettings, Args as ClapArgs, IntoApp, Parser, Subcommand};
+use clap_complete::Shell;
 
 use std::io::stdout;
 
 use anyhow::Result;
 
-#[derive(Debug, StructOpt)]
-#[structopt(about="A secure helper daemon that watches several aspects of the Arch Linux infrastructure and makes sure that certain conditions are met.", global_settings = &[AppSettings::ColoredHelp, AppSettings::DeriveDisplayOrder])]
+/// A secure helper daemon that watches several aspects
+/// of the Arch Linux infrastructure and makes sure that certain conditions are met.
+#[derive(Debug, Parser)]
+#[clap(version, global_setting = AppSettings::DeriveDisplayOrder)]
 pub struct Args {
     /// Verbose logging, specify twice for more
-    #[structopt(short, long, parse(from_occurrences))]
+    #[clap(short, long, parse(from_occurrences))]
     pub verbose: u8,
-    #[structopt(subcommand)]
+
+    #[clap(subcommand)]
     pub command: Command,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 pub enum Command {
     /// Generate and show an execution plan
     Plan,
+
     /// Builds or changes infrastructure
     Apply,
+
     /// Keycloak module commands
-    Keycloak(Action),
+    Keycloak {
+        #[clap(subcommand)]
+        action: Action,
+    },
+
     /// Gitlab module commands
-    Gitlab(Action),
+    Gitlab {
+        #[clap(subcommand)]
+        action: Action,
+    },
+
     /// Generate shell completions
-    #[structopt(name = "completions")]
+    #[clap(name = "completions")]
     Completions(Completions),
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, ClapArgs)]
 pub struct Completions {
-    #[structopt(possible_values=&Shell::variants())]
+    /// Target shell
+    #[clap(arg_enum)]
     pub shell: Shell,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 pub enum Action {
     /// Generate and show an execution plan
     Plan,
+
     /// Builds or changes infrastructure
     Apply,
 }
 
 pub fn gen_completions(args: &Completions) -> Result<()> {
-    Args::clap().gen_completions_to("gluebuddy", args.shell, &mut stdout());
+    clap_complete::generate(
+        args.shell,
+        &mut Args::into_app(),
+        "gluebuddy",
+        &mut stdout(),
+    );
     Ok(())
 }
