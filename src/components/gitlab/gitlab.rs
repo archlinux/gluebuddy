@@ -142,7 +142,7 @@ impl GitLabGlue {
                     let mut summary = PlanSummary::new(&label);
                     let members = self.get_group_members(&group.full_path).await?;
                     for member in &members {
-                        if is_archlinux_bot(&member) {
+                        if is_archlinux_bot(member) {
                             continue;
                         }
 
@@ -199,7 +199,7 @@ impl GitLabGlue {
                             .await?;
 
                         for member in &members {
-                            if is_archlinux_bot(&member) {
+                            if is_archlinux_bot(member) {
                                 continue;
                             }
 
@@ -258,7 +258,7 @@ impl GitLabGlue {
         for staff in state.staff() {
             if !gitlab_group_member_names.contains(&staff.username)
                 && self
-                    .add_group_member(action, &staff, group, DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL)
+                    .add_group_member(action, staff, group, DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL)
                     .await?
             {
                 summary.add += 1;
@@ -266,7 +266,7 @@ impl GitLabGlue {
         }
 
         for member in &archlinux_group_members {
-            if is_archlinux_bot(&member) {
+            if is_archlinux_bot(member) {
                 continue;
             }
             match state.staff_from_gitlab_id(member.id) {
@@ -316,7 +316,7 @@ impl GitLabGlue {
         for staff in state.staff() {
             if !gitlab_group_member_names.contains(&staff.username)
                 && self
-                    .add_group_member(action, &staff, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
+                    .add_group_member(action, staff, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
                     .await?
             {
                 summary.add += 1;
@@ -324,7 +324,7 @@ impl GitLabGlue {
         }
 
         for member in &archlinux_group_members {
-            if is_archlinux_bot(&member) {
+            if is_archlinux_bot(member) {
                 continue;
             }
             match state.staff_from_gitlab_id(member.id) {
@@ -375,7 +375,7 @@ impl GitLabGlue {
                 && self
                     .add_group_member(
                         action,
-                        &staff,
+                        staff,
                         devops_group,
                         DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL,
                     )
@@ -386,7 +386,7 @@ impl GitLabGlue {
         }
 
         for member in &group_members {
-            if is_archlinux_bot(&member) {
+            if is_archlinux_bot(member) {
                 continue;
             }
             match state.devops_from_gitlab_id(member.id) {
@@ -511,7 +511,7 @@ impl GitLabGlue {
 
         debug!("Adding user {} to GitLab group '{}'", user.username, group);
         util::print_diff(
-            &"",
+            "",
             util::format_gitlab_member_access(group, &user.username, access_level).as_str(),
         )?;
         match action {
@@ -547,7 +547,7 @@ impl GitLabGlue {
                 util::access_level_from_u64(member.access_level),
             )
             .as_str(),
-            &"",
+            "",
         )?;
         match action {
             Action::Apply => {
@@ -663,7 +663,7 @@ impl GitLabGlue {
             user.username, project
         );
         util::print_diff(
-            &"",
+            "",
             util::format_gitlab_member_access(project, &user.username, access_level).as_str(),
         )?;
         match action {
@@ -701,7 +701,7 @@ impl GitLabGlue {
                 util::access_level_from_u64(member.access_level),
             )
             .as_str(),
-            &"",
+            "",
         )?;
         match action {
             Action::Apply => {
