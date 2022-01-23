@@ -116,8 +116,7 @@ impl Keycloak {
             .await?;
         let groups = all_groups
             .iter()
-            .filter(|group| root_groups.contains(&group.name.as_ref().unwrap().as_ref()))
-            .collect::<Vec<_>>();
+            .filter(|group| root_groups.contains(&group.name.as_ref().unwrap().as_ref()));
 
         let groups_members = groups.into_iter().flat_map(|group| {
             let group_name = group.name.as_ref().unwrap();
