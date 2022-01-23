@@ -2,7 +2,7 @@
 name = "gluebuddy"
 version = "0.1.0"
 authors = ["Levente Polyak <anthraxx@archlinux.org>", "Sven-Hendrik Haase <svenstaro@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license-file = "LICENSE"
 repository = "https://gitlab.archlinux.org/archlinux/gluebuddy"
 categories = ["command-line-utilities"]
