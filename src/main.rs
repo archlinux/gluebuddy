@@ -20,12 +20,9 @@ use tokio::sync::Mutex;
 
 async fn run(args: Args) -> Result<()> {
     /* Early exit for completions */
-    match args.command {
-        Command::Completions(completions) => {
+    if let Command::Completions(completions) = args.command {
             args::gen_completions(&completions)?;
             return Ok(());
-        }
-        _ => {}
     }
 
     let state = Arc::new(Mutex::new(State::default()));
