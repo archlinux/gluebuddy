@@ -95,5 +95,5 @@ pub fn format_gitlab_project_settings(
 }
 
 pub fn format_separator() -> String {
-    "-".repeat(72).to_string()
+    "-".repeat(72)
 }
