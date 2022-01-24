@@ -19,3 +19,11 @@ test:
   script:
     - cargo build --release --locked
     - cargo test --release --locked
+
+audit:
+  stage: test
+  before_script:
+    - cargo install cargo-audit
+  script:
+    - cargo audit
+      --ignore RUSTSEC-2020-0159 # `chrono` localtime_r segfault
