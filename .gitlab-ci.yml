@@ -21,6 +21,11 @@ test:
     - cargo build --release --locked
     - cargo test --release --locked
 
+format:
+  stage: test
+  script:
+    - cargo fmt --all -- --check
+
 audit:
   stage: test
   before_script:
