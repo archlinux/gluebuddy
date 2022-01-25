@@ -114,44 +114,44 @@ impl Keycloak {
             .admin
             .realm_groups_get(&self.realm, None, None, None, None)
             .await?;
-        let groups = all_groups
-            .iter()
-            .filter(|group| root_groups.contains(&group.name.as_ref().unwrap().as_ref()));
 
-        let groups_members = groups.into_iter().flat_map(|group| {
-            let group_name = group.name.as_ref().unwrap();
-            info!(
-                "collect members of group {} via {}",
-                group_name,
-                group.path.as_ref().unwrap()
-            );
-            vec![Box::pin(self.get_group_members(group.clone()))]
-                .into_iter()
-                .chain(group.sub_groups.as_ref().unwrap().iter().map(|sub_group| {
-                    info!(
-                        "collect members of sub group {} via {}",
-                        sub_group.name.as_ref().unwrap(),
-                        sub_group.path.as_ref().unwrap()
-                    );
-                    Box::pin(self.get_group_members(sub_group.clone()))
-                }))
-                .chain(
-                    group
-                        .sub_groups
-                        .as_ref()
-                        .unwrap()
-                        .iter()
-                        .flat_map(|sub_group| sub_group.sub_groups.as_ref().unwrap())
-                        .map(|sub_group| {
-                            info!(
-                                "collect members of sub group {} via {}",
-                                sub_group.name.as_ref().unwrap(),
-                                sub_group.path.as_ref().unwrap(),
-                            );
-                            Box::pin(self.get_group_members(sub_group.clone()))
-                        }),
-                )
-        });
+        let groups_members = all_groups
+            .iter()
+            .filter(|group| root_groups.contains(&group.name.as_ref().unwrap().as_ref()))
+            .flat_map(|group| {
+                let group_name = group.name.as_ref().unwrap();
+                info!(
+                    "collect members of group {} via {}",
+                    group_name,
+                    group.path.as_ref().unwrap()
+                );
+                vec![Box::pin(self.get_group_members(group.clone()))]
+                    .into_iter()
+                    .chain(group.sub_groups.as_ref().unwrap().iter().map(|sub_group| {
+                        info!(
+                            "collect members of sub group {} via {}",
+                            sub_group.name.as_ref().unwrap(),
+                            sub_group.path.as_ref().unwrap()
+                        );
+                        Box::pin(self.get_group_members(sub_group.clone()))
+                    }))
+                    .chain(
+                        group
+                            .sub_groups
+                            .as_ref()
+                            .unwrap()
+                            .iter()
+                            .flat_map(|sub_group| sub_group.sub_groups.as_ref().unwrap())
+                            .map(|sub_group| {
+                                info!(
+                                    "collect members of sub group {} via {}",
+                                    sub_group.name.as_ref().unwrap(),
+                                    sub_group.path.as_ref().unwrap(),
+                                );
+                                Box::pin(self.get_group_members(sub_group.clone()))
+                            }),
+                    )
+            });
 
         let group_members = try_join_all(groups_members).await?;
         let mut state = self.state.lock().await;

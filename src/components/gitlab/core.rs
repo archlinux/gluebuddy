@@ -514,20 +514,17 @@ impl GitLabGlue {
             "",
             util::format_gitlab_member_access(group, &user.username, access_level).as_str(),
         )?;
-        match action {
-            Action::Apply => {
-                let endpoint = gitlab::api::groups::members::AddGroupMember::builder()
-                    .group(group)
-                    .user(gitlab_id)
-                    .access_level(access_level)
-                    .build()
-                    .unwrap();
-                gitlab::api::ignore(endpoint)
-                    .query_async(&self.client)
-                    .await
-                    .unwrap();
-            }
-            _ => {}
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::groups::members::AddGroupMember::builder()
+                .group(group)
+                .user(gitlab_id)
+                .access_level(access_level)
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await
+                .unwrap();
         }
         Ok(true)
     }
@@ -549,19 +546,16 @@ impl GitLabGlue {
             .as_str(),
             "",
         )?;
-        match action {
-            Action::Apply => {
-                let endpoint = gitlab::api::groups::members::RemoveGroupMember::builder()
-                    .group(group)
-                    .user(member.id)
-                    .build()
-                    .unwrap();
-                gitlab::api::ignore(endpoint)
-                    .query_async(&self.client)
-                    .await
-                    .unwrap();
-            }
-            _ => {}
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::groups::members::RemoveGroupMember::builder()
+                .group(group)
+                .user(member.id)
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await
+                .unwrap();
         }
         Ok(true)
     }
@@ -597,20 +591,17 @@ impl GitLabGlue {
             util::format_gitlab_member_access(group, &user.username, expected_access_level)
                 .as_str(),
         )?;
-        match action {
-            Action::Apply => {
-                let endpoint = gitlab::api::groups::members::EditGroupMember::builder()
-                    .group(group)
-                    .user(group_member.id)
-                    .access_level(expected_access_level)
-                    .build()
-                    .unwrap();
-                gitlab::api::ignore(endpoint)
-                    .query_async(&self.client)
-                    .await
-                    .unwrap();
-            }
-            _ => {}
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::groups::members::EditGroupMember::builder()
+                .group(group)
+                .user(group_member.id)
+                .access_level(expected_access_level)
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await
+                .unwrap();
         }
         Ok(true)
     }
@@ -666,20 +657,17 @@ impl GitLabGlue {
             "",
             util::format_gitlab_member_access(project, &user.username, access_level).as_str(),
         )?;
-        match action {
-            Action::Apply => {
-                let endpoint = gitlab::api::projects::members::AddProjectMember::builder()
-                    .project(project)
-                    .user(gitlab_id)
-                    .access_level(access_level)
-                    .build()
-                    .unwrap();
-                gitlab::api::ignore(endpoint)
-                    .query_async(&self.client)
-                    .await
-                    .unwrap();
-            }
-            _ => {}
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::projects::members::AddProjectMember::builder()
+                .project(project)
+                .user(gitlab_id)
+                .access_level(access_level)
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await
+                .unwrap();
         }
         Ok(true)
     }
@@ -703,19 +691,16 @@ impl GitLabGlue {
             .as_str(),
             "",
         )?;
-        match action {
-            Action::Apply => {
-                let endpoint = gitlab::api::projects::members::RemoveProjectMember::builder()
-                    .project(project)
-                    .user(member.id)
-                    .build()
-                    .unwrap();
-                gitlab::api::ignore(endpoint)
-                    .query_async(&self.client)
-                    .await
-                    .unwrap();
-            }
-            _ => {}
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::projects::members::RemoveProjectMember::builder()
+                .project(project)
+                .user(member.id)
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await
+                .unwrap();
         }
         Ok(true)
     }
@@ -753,19 +738,16 @@ impl GitLabGlue {
             .as_str(),
             util::format_gitlab_member_access(project, &user.username, access_level).as_str(),
         )?;
-        match action {
-            Action::Apply => {
-                let endpoint = gitlab::api::projects::members::EditProjectMember::builder()
-                    .project(project)
-                    .user(gitlab_id)
-                    .access_level(access_level)
-                    .build()
-                    .unwrap();
-                gitlab::api::ignore(endpoint)
-                    .query_async(&self.client)
-                    .await?;
-            }
-            _ => {}
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::projects::members::EditProjectMember::builder()
+                .project(project)
+                .user(gitlab_id)
+                .access_level(access_level)
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await?;
         }
         Ok(true)
     }
@@ -823,19 +805,16 @@ impl GitLabGlue {
             )
             .as_str(),
         )?;
-        match action {
-            Action::Apply => {
-                let endpoint = gitlab::api::projects::EditProject::builder()
-                    .project(project.id)
-                    .request_access_enabled(expected_request_access_enabled)
-                    .snippets_access_level(expected_snippets_access_level.as_gitlab_type())
-                    .build()
-                    .unwrap();
-                gitlab::api::ignore(endpoint)
-                    .query_async(&self.client)
-                    .await?;
-            }
-            _ => {}
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::projects::EditProject::builder()
+                .project(project.id)
+                .request_access_enabled(expected_request_access_enabled)
+                .snippets_access_level(expected_snippets_access_level.as_gitlab_type())
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await?;
         }
         Ok(true)
     }
