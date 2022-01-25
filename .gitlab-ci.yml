@@ -16,6 +16,7 @@ test:
   artifacts:
     paths:
       - target/release/gluebuddy
+    expire_in: 1 day
   script:
     - cargo build --release --locked
     - cargo test --release --locked
