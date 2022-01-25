@@ -1,4 +1,4 @@
-pub mod gitlab;
+pub mod core;
 pub mod types;
 
-pub use crate::components::gitlab::gitlab::GitLabGlue;
+pub use crate::components::gitlab::core::GitLabGlue;

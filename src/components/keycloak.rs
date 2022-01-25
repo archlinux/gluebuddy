@@ -1,3 +1,3 @@
-pub mod keycloak;
+pub mod core;
 
-pub use crate::components::keycloak::keycloak::Keycloak;
+pub use crate::components::keycloak::core::Keycloak;

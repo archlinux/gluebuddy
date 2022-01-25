@@ -1,11 +1,14 @@
 use args::*;
 mod args;
 
-use state::State;
+#[allow(dead_code)]
 mod state;
+use state::State;
 
+#[allow(dead_code)]
 mod util;
 
+#[allow(dead_code)]
 mod components;
 use components::gitlab::GitLabGlue;
 use components::keycloak::Keycloak;
@@ -21,8 +24,8 @@ use tokio::sync::Mutex;
 async fn run(args: Args) -> Result<()> {
     /* Early exit for completions */
     if let Command::Completions(completions) = args.command {
-            args::gen_completions(&completions)?;
-            return Ok(());
+        args::gen_completions(&completions)?;
+        return Ok(());
     }
 
     let state = Arc::new(Mutex::new(State::default()));
