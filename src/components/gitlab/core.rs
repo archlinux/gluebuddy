@@ -250,14 +250,12 @@ impl GitLabGlue {
         let mut summary = PlanSummary::new("GitLab 'Arch Linux' group members");
         let state = self.state.lock().await;
 
-        let gitlab_group_members = archlinux_group_members
-            .iter()
-            .map(|e| e.id)
-            .collect::<Vec<_>>();
-
         for staff in state.staff() {
             if let Some(gitlab_id) = staff.gitlab_id {
-                if !gitlab_group_members.contains(&gitlab_id)
+                if !archlinux_group_members
+                    .iter()
+                    .map(|e| e.id)
+                    .any(|e| e == gitlab_id)
                     && self
                         .add_group_member(
                             action,
@@ -315,14 +313,12 @@ impl GitLabGlue {
         let mut summary = PlanSummary::new("GitLab 'Arch Linux/Teams/Staff' group members");
         let state = self.state.lock().await;
 
-        let gitlab_group_members = archlinux_group_members
-            .iter()
-            .map(|e| e.id)
-            .collect::<Vec<_>>();
-
         for staff in state.staff() {
             if let Some(gitlab_id) = staff.gitlab_id {
-                if !gitlab_group_members.contains(&gitlab_id)
+                if !archlinux_group_members
+                    .iter()
+                    .map(|e| e.id)
+                    .any(|e| e == gitlab_id)
                     && self
                         .add_group_member(action, staff, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
                         .await?
@@ -373,12 +369,10 @@ impl GitLabGlue {
         let devops_group = "archlinux/teams/devops";
         let group_members = self.get_group_members(devops_group).await?;
 
-        let group_member_ids = group_members.iter().map(|e| e.id).collect::<Vec<_>>();
-
         let state = self.state.lock().await;
         for staff in state.devops() {
             if let Some(gitlab_id) = staff.gitlab_id {
-                if !group_member_ids.contains(&gitlab_id)
+                if !group_members.iter().map(|e| e.id).any(|e| e == gitlab_id)
                     && self
                         .add_group_member(
                             action,
