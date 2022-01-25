@@ -35,16 +35,9 @@ impl User {
     }
 }
 
+#[derive(Default)]
 pub struct State {
     pub users: HashMap<String, User>,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self {
-            users: HashMap::new(),
-        }
-    }
 }
 
 impl State {
@@ -67,46 +60,34 @@ impl State {
     }
 
     pub fn user_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
-        self.users
-            .values()
-            .filter(|user| {
-                user.gitlab_id
-                    .map(|id| id.eq(&gitlab_id))
-                    .unwrap_or_else(|| false)
-            })
-            .next()
+        self.users.values().find(|user| {
+            user.gitlab_id
+                .map(|id| id.eq(&gitlab_id))
+                .unwrap_or_else(|| false)
+        })
     }
 
     pub fn staff_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
-        self.staff()
-            .into_iter()
-            .filter(|user| {
-                user.gitlab_id
-                    .map(|id| id.eq(&gitlab_id))
-                    .unwrap_or_else(|| false)
-            })
-            .next()
+        self.staff().into_iter().find(|user| {
+            user.gitlab_id
+                .map(|id| id.eq(&gitlab_id))
+                .unwrap_or_else(|| false)
+        })
     }
 
     pub fn staff_with_externals_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
-        self.staff_with_externals()
-            .into_iter()
-            .filter(|user| {
-                user.gitlab_id
-                    .map(|id| id.eq(&gitlab_id))
-                    .unwrap_or_else(|| false)
-            })
-            .next()
+        self.staff_with_externals().into_iter().find(|user| {
+            user.gitlab_id
+                .map(|id| id.eq(&gitlab_id))
+                .unwrap_or_else(|| false)
+        })
     }
 
     pub fn devops_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
-        self.devops()
-            .into_iter()
-            .filter(|user| {
-                user.gitlab_id
-                    .map(|id| id.eq(&gitlab_id))
-                    .unwrap_or_else(|| false)
-            })
-            .next()
+        self.devops().into_iter().find(|user| {
+            user.gitlab_id
+                .map(|id| id.eq(&gitlab_id))
+                .unwrap_or_else(|| false)
+        })
     }
 }
