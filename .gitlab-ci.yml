@@ -21,6 +21,14 @@ test:
     - cargo build --release --locked
     - cargo test --release --locked
 
+format:
+  stage: test
+  needs: []
+  before_script:
+    - rustup component add rustfmt
+  script:
+    - cargo fmt --all -- --check
+
 audit:
   stage: test
   before_script:
