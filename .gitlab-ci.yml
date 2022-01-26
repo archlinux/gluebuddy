@@ -1,6 +1,7 @@
 image: "rust:latest"
 
 stages:
+  - build
   - test
 
 variables:
@@ -11,23 +12,32 @@ cache:
   - .cargo/
   - target/
 
-test:
-  stage: test
+build:
+  stage: build
+  needs: []
   artifacts:
     paths:
-      - target/release/gluebuddy
+      - target
     expire_in: 1 day
   script:
     - cargo build --release --locked
+
+test:
+  stage: test
+  needs:
+    - build
+  script:
     - cargo test --release --locked
 
 format:
   stage: test
+  needs: []
   script:
     - cargo fmt --all -- --check
 
 audit:
   stage: test
+  needs: []
   before_script:
     - cargo install cargo-audit
   script:
@@ -36,6 +46,8 @@ audit:
 
 clippy:
   stage: test
+  needs:
+    - build
   before_script:
     - rustup component add clippy
   script:
