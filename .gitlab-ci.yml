@@ -29,6 +29,13 @@ test:
   script:
     - cargo test --release --locked
 
+check:
+  stage: test
+  needs:
+    - build
+  script:
+    - cargo check --all --verbose --release
+
 format:
   stage: test
   needs: []
