@@ -834,6 +834,7 @@ fn is_archlinux_bot(member: &GitLabMember) -> bool {
     if vec![
         "project_10185_bot2".to_string(),
         "project_19591_bot".to_string(),
+        "project_19796_bot".to_string(),
     ]
     .contains(&member.username)
     {
@@ -917,4 +918,31 @@ fn protect_tag(client: &Gitlab, project: &GroupProjects, tag: &str) -> Result<Pr
         .unwrap();
     let result: ProtectedTag = endpoint.query(client)?;
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! is_archlinux_bot_tests {
+        ($($name:ident: $value:expr,)*) => {
+    $(
+        #[test]
+        fn $name() {
+            let (input, _expected) = $value;
+            let member = GitLabMember { id: 0, username: String::from(input), name: String::from(""), email: Option::None, access_level: 0 };
+            assert_eq!(is_archlinux_bot(&member), _expected);
+        }
+    )*
+    }
+    }
+
+    is_archlinux_bot_tests! {
+        is_archlinux_bot_gitlab_owner: (GITLAB_OWNER, true),
+        is_archlinux_bot_gitlab_bot: (GITLAB_BOT, true),
+        is_archlinux_bot_project_10185_bot2: ("project_10185_bot2", true),
+        is_archlinux_bot_project_19591_bot: ("project_19591_bot", true),
+        is_archlinux_bot_project_19796_bot: ("project_19796_bot", true),
+        is_archlinux_bot_test: ("test", false),
+    }
 }

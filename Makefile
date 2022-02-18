@@ -7,12 +7,15 @@ else
 	CARGO_OPTIONS :=
 endif
 
-.PHONY: all gluebuddy lint
+.PHONY: all gluebuddy test lint
 
-all: gluebuddy lint
+all: gluebuddy test lint
 
 gluebuddy:
 	$(CARGO) build $(CARGO_OPTIONS)
+
+test:
+	$(CARGO) test $(CARGO_OPTIONS)
 
 lint:
 	$(CARGO) fmt -- --check
