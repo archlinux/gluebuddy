@@ -60,11 +60,6 @@ pub enum Action {
 }
 
 pub fn gen_completions(args: &Completions) -> Result<()> {
-    clap_complete::generate(
-        args.shell,
-        &mut Args::into_app(),
-        "gluebuddy",
-        &mut stdout(),
-    );
+    clap_complete::generate(args.shell, &mut Args::command(), "gluebuddy", &mut stdout());
     Ok(())
 }
