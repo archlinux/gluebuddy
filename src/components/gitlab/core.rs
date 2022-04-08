@@ -835,6 +835,7 @@ fn is_archlinux_bot(member: &GitLabMember) -> bool {
         "project_10185_bot2".to_string(),
         "project_19591_bot".to_string(),
         "project_19796_bot".to_string(),
+        "renovate".to_string(),
     ]
     .contains(&member.username)
     {
@@ -943,6 +944,7 @@ mod tests {
         is_archlinux_bot_project_10185_bot2: ("project_10185_bot2", true),
         is_archlinux_bot_project_19591_bot: ("project_19591_bot", true),
         is_archlinux_bot_project_19796_bot: ("project_19796_bot", true),
+        is_archlinux_bot_renovate: ("renovate", true),
         is_archlinux_bot_test: ("test", false),
     }
 }
