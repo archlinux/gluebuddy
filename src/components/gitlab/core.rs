@@ -829,17 +829,13 @@ fn is_archlinux_bot(member: &GitLabMember) -> bool {
     if member.username.eq(GITLAB_BOT) {
         return true;
     }
-    // TODO: find a better way for project token users
-    // This is not nicely maintainable nor safe to do by regex
-    if vec![
-        "project_10185_bot2".to_string(),
-        "project_19591_bot".to_string(),
-        "project_19796_bot".to_string(),
-        "renovate".to_string(),
-    ]
-    .contains(&member.username)
-    {
-        return true;
+    let bot_users_list = env::var_os("GLUEBUDDY_GITLAB_BOT_USERS");
+    if let Some(list) = bot_users_list {
+        return list
+            .into_string()
+            .unwrap()
+            .split(',')
+            .any(|bot_name| (&member.username).contains(bot_name));
     }
     false
 }
@@ -924,27 +920,38 @@ fn protect_tag(client: &Gitlab, project: &GroupProjects, tag: &str) -> Result<Pr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
+    use serial_test::serial;
 
-    macro_rules! is_archlinux_bot_tests {
-        ($($name:ident: $value:expr,)*) => {
-    $(
-        #[test]
-        fn $name() {
-            let (input, _expected) = $value;
-            let member = GitLabMember { id: 0, username: String::from(input), name: String::from(""), email: Option::None, access_level: 0 };
-            assert_eq!(is_archlinux_bot(&member), _expected);
+    const SOME_KNOWN_BOTS: &str = "project_10185_bot2,project_19591_bot,project_19796_bot,renovate";
+
+    #[rstest]
+    #[case(None, GITLAB_OWNER, true)]
+    #[case(None, GITLAB_BOT, true)]
+    #[case(Some(SOME_KNOWN_BOTS), "renovate", true)]
+    #[case(Some(SOME_KNOWN_BOTS), "project_10185_bot2", true)]
+    #[case(Some(SOME_KNOWN_BOTS), "project_19591_bot", true)]
+    #[case(Some(SOME_KNOWN_BOTS), "project_19796_bot", true)]
+    #[case(None, "test_bot_user", false)]
+    #[case(Some("another_test_user"), "test_bot_user", false)]
+    #[case(Some(SOME_KNOWN_BOTS), "test_bot_user", false)]
+    #[serial]
+    fn is_archlinux_bot_test(
+        #[case] bot_users_env: Option<&str>,
+        #[case] username: &str,
+        #[case] expected: bool,
+    ) {
+        match bot_users_env {
+            None => env::remove_var("GLUEBUDDY_GITLAB_BOT_USERS"),
+            Some(x) => env::set_var("GLUEBUDDY_GITLAB_BOT_USERS", x),
         }
-    )*
-    }
-    }
-
-    is_archlinux_bot_tests! {
-        is_archlinux_bot_gitlab_owner: (GITLAB_OWNER, true),
-        is_archlinux_bot_gitlab_bot: (GITLAB_BOT, true),
-        is_archlinux_bot_project_10185_bot2: ("project_10185_bot2", true),
-        is_archlinux_bot_project_19591_bot: ("project_19591_bot", true),
-        is_archlinux_bot_project_19796_bot: ("project_19796_bot", true),
-        is_archlinux_bot_renovate: ("renovate", true),
-        is_archlinux_bot_test: ("test", false),
+        let member = GitLabMember {
+            id: 0,
+            username: String::from(username),
+            name: String::from(""),
+            email: None,
+            access_level: 0,
+        };
+        assert_eq!(is_archlinux_bot(&member), expected);
     }
 }

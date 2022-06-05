@@ -9,6 +9,7 @@ It glues Arch together. :)
 Gluebuddy requires the following environment variables to be set:
 
 * GLUEBUDDY_GITLAB_TOKEN - Gitlab bot personal access token
+* GLUEBUDDY_GITLAB_BOT_USERS - Optionally set gitlab bot users separated with commas
 * GLUEBUDDY_KEYCLOAK_USERNAME - keycloak admin username
 * GLUEBUDDY_KEYCLOAK_PASSWORD - keycloak admin password
 * GLUEBUDDY_KEYCLOAK_REALM - Keycloak realm

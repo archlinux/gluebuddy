@@ -27,3 +27,7 @@ strum_macros = "0.24"
 difference = "2.0"
 term = "0.7"
 itertools = "0.10"
+
+[dev-dependencies]
+rstest= "0.13.0"
+serial_test = "0.7.0"
