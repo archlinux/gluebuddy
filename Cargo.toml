@@ -10,23 +10,23 @@ publish = false
 
 [dependencies]
 keycloak = "17.0"
-gitlab = "0.1409"
-reqwest = "0.11"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
-futures = "0.3"
-anyhow = "1.0"
-log = "0.4"
-env_logger = "0.9"
-clap = { version = "3.0", features = ["derive"] }
-clap_complete = "3.0"
-serde = {version = "1.0", features = ["derive"]}
-serde_repr = "0.1"
-serde_json = "1.0"
-strum = "0.24"
-strum_macros = "0.24"
-difference = "2.0"
-term = "0.7"
-itertools = "0.10"
+gitlab = "0.1500.0"
+reqwest = "0.11.10"
+tokio = { version = "1.19.1", features = ["rt-multi-thread", "macros", "sync"] }
+futures = "0.3.21"
+anyhow = "1.0.57"
+log = "0.4.17"
+env_logger = "0.9.0"
+clap = { version = "3.1.18", features = ["derive"] }
+clap_complete = "3.1.4"
+serde = { version = "1.0.137", features = ["derive"] }
+serde_repr = "0.1.8"
+serde_json = "1.0.81"
+strum = "0.24.0"
+strum_macros = "0.24.0"
+difference = "2.0.0"
+term = "0.7.0"
+itertools = "0.10.3"
 
 [dev-dependencies]
 rstest= "0.13.0"
