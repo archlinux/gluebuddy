@@ -835,7 +835,7 @@ fn is_archlinux_bot(member: &GitLabMember) -> bool {
             .into_string()
             .unwrap()
             .split(',')
-            .any(|bot_name| (&member.username).contains(bot_name));
+            .any(|bot_name| (&member.username).eq(bot_name));
     }
     false
 }
@@ -929,6 +929,7 @@ mod tests {
     #[case(None, GITLAB_OWNER, true)]
     #[case(None, GITLAB_BOT, true)]
     #[case(Some(SOME_KNOWN_BOTS), "renovate", true)]
+    #[case(Some(SOME_KNOWN_BOTS), "renovate_kitty", false)]
     #[case(Some(SOME_KNOWN_BOTS), "project_10185_bot2", true)]
     #[case(Some(SOME_KNOWN_BOTS), "project_19591_bot", true)]
     #[case(Some(SOME_KNOWN_BOTS), "project_19796_bot", true)]
