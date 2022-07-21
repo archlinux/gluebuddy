@@ -881,7 +881,7 @@ fn unprotect_branch(client: &Gitlab, project: &GroupProjects, branch: &str) -> R
         .name(branch)
         .build()
         .unwrap();
-    let _: () = gitlab::api::ignore(endpoint).query(client)?;
+    gitlab::api::ignore(endpoint).query(client)?;
     Ok(())
 }
 
@@ -901,7 +901,7 @@ fn unprotect_tag(client: &Gitlab, project: &GroupProjects, tag: &str) -> Result<
         .name(tag)
         .build()
         .unwrap();
-    let _: () = gitlab::api::ignore(endpoint).query(client)?;
+    gitlab::api::ignore(endpoint).query(client)?;
     Ok(())
 }
 
