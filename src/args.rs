@@ -1,20 +1,19 @@
-use clap::{AppSettings, Args as ClapArgs, IntoApp, Parser, Subcommand};
+use clap::{ArgAction, Args as ClapArgs, CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 
 use std::io::stdout;
 
-use anyhow::Result;
-
 /// A secure helper daemon that watches several aspects
 /// of the Arch Linux infrastructure and makes sure that certain conditions are met.
 #[derive(Debug, Parser)]
-#[clap(version, global_setting = AppSettings::DeriveDisplayOrder)]
+#[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
 pub struct Args {
     /// Verbose logging, specify twice for more
-    #[clap(short, long, parse(from_occurrences))]
+    #[arg(short, long, action = ArgAction::Count)]
     pub verbose: u8,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub command: Command,
 }
 
@@ -46,7 +45,6 @@ pub enum Command {
 #[derive(Debug, ClapArgs)]
 pub struct Completions {
     /// Target shell
-    #[clap(arg_enum)]
     pub shell: Shell,
 }
 
@@ -59,7 +57,8 @@ pub enum Action {
     Apply,
 }
 
-pub fn gen_completions(args: &Completions) -> Result<()> {
-    clap_complete::generate(args.shell, &mut Args::command(), "gluebuddy", &mut stdout());
-    Ok(())
+pub fn gen_completions(completions: &Completions) {
+    let mut cmd = Args::command();
+    let bin_name = cmd.get_name().to_string();
+    clap_complete::generate(completions.shell, &mut cmd, &bin_name, &mut stdout());
 }

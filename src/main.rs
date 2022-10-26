@@ -24,7 +24,7 @@ use tokio::sync::Mutex;
 async fn run(args: Args) -> Result<()> {
     /* Early exit for completions */
     if let Command::Completions(completions) = args.command {
-        args::gen_completions(&completions)?;
+        gen_completions(&completions);
         return Ok(());
     }
 
