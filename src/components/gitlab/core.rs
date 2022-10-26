@@ -73,7 +73,6 @@ impl GitLabGlue {
                         .unwrap(),
                 )
                 .active(())
-                .external(false)
                 .build()
                 .unwrap();
             let users: Vec<GitLabUser> = users_endpoint.query_async(&self.client).await?;
