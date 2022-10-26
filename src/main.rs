@@ -61,7 +61,8 @@ async fn main() {
     let logging = match args.verbose {
         0 => "info",
         1 => "gluebuddy=debug",
-        _ => "debug",
+        2 => "debug",
+        _ => "trace",
     };
 
     env_logger::init_from_env(Env::default().default_filter_or(logging));
