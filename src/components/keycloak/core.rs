@@ -48,10 +48,9 @@ impl Keycloak {
 
         let token = Self::acquire_custom_realm(
             url,
+            realm,
             username,
             password,
-            "archlinux",
-            username,
             "client_credentials",
             &client,
         )
@@ -67,23 +66,20 @@ impl Keycloak {
 
     async fn acquire_custom_realm(
         url: &str,
-        username: &str,
-        password: &str,
         realm: &str,
         client_id: &str,
+        client_secret: &str,
         grant_type: &str,
-        client: &reqwest::Client,
+        client: &Client,
     ) -> Result<KeycloakAdminToken, KeycloakError> {
         let response = client
             .post(&format!(
-                "{}/auth/realms/{}/protocol/openid-connect/token",
+                "{}/realms/{}/protocol/openid-connect/token",
                 url, realm
             ))
             .form(&json!({
-                "username": username,
-                "password": password,
                 "client_id": client_id,
-                "client_secret": password,
+                "client_secret": client_secret,
                 "grant_type": grant_type
             }))
             .send()
