@@ -108,7 +108,7 @@ impl Keycloak {
 
         let all_groups = self
             .admin
-            .realm_groups_get(&self.realm, None, None, None, None)
+            .realm_groups_get(&self.realm, None, None, None, None, None, None)
             .await?;
 
         let groups_members = all_groups
