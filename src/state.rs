@@ -5,6 +5,7 @@ pub struct User {
     pub username: String,
     pub email: String,
     pub gitlab_id: Option<u64>,
+    pub memberships: HashSet<String>,
     pub groups: HashSet<String>,
 }
 
@@ -38,6 +39,7 @@ impl User {
             email,
             gitlab_id: None,
             groups: HashSet::new(),
+            memberships: HashSet::new(),
         }
     }
 

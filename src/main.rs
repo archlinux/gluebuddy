@@ -36,6 +36,7 @@ async fn run(args: Args) -> Result<()> {
     let mailman_glue = Mailman::new(state.clone())?;
 
     keycloak_glue.gather().await?;
+    mailman_glue.gather().await?;
     // gitlab_glue.gather().await?;
 
     match args.command {
