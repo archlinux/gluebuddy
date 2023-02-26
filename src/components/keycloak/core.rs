@@ -166,7 +166,7 @@ impl Keycloak {
                 let state_user = state
                     .users
                     .entry(user.username.as_ref().unwrap().to_string())
-                    .or_insert_with_key(|key| User::new(key.clone()));
+                    .or_insert_with_key(|key| User::new(key.clone(), user.email.as_ref().unwrap().to_string()));
                 state_user.groups.insert(path.to_string());
             }
         }

@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 #[derive(Eq, PartialEq, Debug)]
 pub struct User {
     pub username: String,
+    pub email: String,
     pub gitlab_id: Option<u64>,
     pub groups: HashSet<String>,
 }
@@ -31,9 +32,10 @@ impl PackageMaintainerRole {
 }
 
 impl User {
-    pub fn new(username: String) -> User {
+    pub fn new(username: String, email: String) -> User {
         User {
             username,
+            email,
             gitlab_id: None,
             groups: HashSet::new(),
         }
