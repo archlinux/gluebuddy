@@ -14,6 +14,9 @@ Gluebuddy requires the following environment variables to be set:
 * GLUEBUDDY_KEYCLOAK_PASSWORD - keycloak admin password
 * GLUEBUDDY_KEYCLOAK_REALM - Keycloak realm
 * GLUEBUDDY_KEYCLOAK_URL - Keycloak base url (without trailing /)
+* GLUEBUDDY_MAILMAN_URL - Mailman base rest url (without trailing /)
+* GLUEBUDDY_MAILMAN_USERNAME - rest username
+* GLUEBUDDY_MAILMAN_PASSWORD - rest password
 
 ## Service account Keycloak
 
