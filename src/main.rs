@@ -12,6 +12,7 @@ mod util;
 mod components;
 use components::gitlab::GitLabGlue;
 use components::keycloak::Keycloak;
+use components::mailman::Mailman;
 
 use std::sync::Arc;
 
@@ -32,9 +33,10 @@ async fn run(args: Args) -> Result<()> {
 
     let keycloak_glue = Keycloak::new(state.clone()).await?;
     let gitlab_glue = GitLabGlue::new(state.clone()).await?;
+    let mailman_glue = Mailman::new(state.clone())?;
 
     keycloak_glue.gather().await?;
-    gitlab_glue.gather().await?;
+    // gitlab_glue.gather().await?;
 
     match args.command {
         Command::Completions(_) => {}
@@ -43,8 +45,9 @@ async fn run(args: Args) -> Result<()> {
         }
         Command::Gitlab { action } => gitlab_glue.run(action).await?,
         Command::Plan => {
-            keycloak_glue.run(Action::Plan).await?;
-            gitlab_glue.run(Action::Plan).await?;
+            // keycloak_glue.run(Action::Plan).await?;
+            // gitlab_glue.run(Action::Plan).await?;
+            mailman_glue.run(Action::Plan).await?;
         }
         Command::Apply => {
             keycloak_glue.run(Action::Apply).await?;
