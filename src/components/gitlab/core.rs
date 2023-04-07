@@ -174,6 +174,16 @@ impl GitLabGlue {
                     println!("{}", summary);
                     println!("{}", util::format_separator());
 
+                    let label = format!("GitLab '{}' group settings", group.full_path);
+                    let mut summary = PlanSummary::new(&label);
+
+                    if self.apply_group_settings(action, &group).await? {
+                        summary.change += 1;
+                    }
+
+                    println!("{}", summary);
+                    println!("{}", util::format_separator());
+
                     let projects = self.get_group_projects(&group.full_path).await?;
                     for project in projects {
                         let label =
@@ -811,6 +821,33 @@ impl GitLabGlue {
                 .project(project.id)
                 .request_access_enabled(expected_request_access_enabled)
                 .snippets_access_level(expected_snippets_access_level.as_gitlab_type())
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await?;
+        }
+        Ok(true)
+    }
+
+    async fn apply_group_settings(&self, action: &Action, group: &Group) -> Result<bool> {
+        let expected_request_access_enabled = false;
+
+        if group.request_access_enabled == expected_request_access_enabled {
+            return Ok(false);
+        }
+
+        debug!("edit group settings for {}", group.full_path);
+        util::print_diff(
+            util::format_gitlab_group_settings(&group.full_path, group.request_access_enabled)
+                .as_str(),
+            util::format_gitlab_group_settings(&group.full_path, expected_request_access_enabled)
+                .as_str(),
+        )?;
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::groups::EditGroup::builder()
+                .group(group.id)
+                .request_access_enabled(expected_request_access_enabled)
                 .build()
                 .unwrap();
             gitlab::api::ignore(endpoint)

@@ -94,6 +94,16 @@ pub fn format_gitlab_project_settings(
     )
 }
 
+pub fn format_gitlab_group_settings(path: &str, request_access_enabled: bool) -> String {
+    format!(
+        "gitlab_group_setting {{\n\
+        \tnamespace              = {}\n\
+        \trequest_access_enabled = {}\n\
+        }}",
+        path, request_access_enabled,
+    )
+}
+
 pub fn format_separator() -> String {
     "-".repeat(72)
 }
