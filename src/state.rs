@@ -7,6 +7,29 @@ pub struct User {
     pub groups: HashSet<String>,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum PackageMaintainerRole {
+    Core,
+    JuniorCore,
+    Regular,
+    Junior,
+}
+
+impl PackageMaintainerRole {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Core => "Core Package Maintainers",
+            Self::JuniorCore => "Junior Core Package Maintainers",
+            Self::Regular => "Package Maintainers",
+            Self::Junior => "Junior Package Maintainers",
+        }
+    }
+
+    pub fn to_path(self) -> String {
+        self.as_str().to_ascii_lowercase().replace(' ', "-")
+    }
+}
+
 impl User {
     pub fn new(username: String) -> User {
         User {
@@ -33,6 +56,20 @@ impl User {
             .iter()
             .any(|group| group.starts_with("/Arch Linux Staff/DevOps"))
     }
+
+    pub fn is_package_maintainer(&self) -> bool {
+        self.groups
+            .iter()
+            .any(|group| group.starts_with("/Arch Linux Staff/Package Maintainer Team/"))
+    }
+
+    pub fn has_package_maintainer_role(&self, role: PackageMaintainerRole) -> bool {
+        let expected = format!(
+            "/Arch Linux Staff/Package Maintainer Team/{}",
+            role.as_str()
+        );
+        self.groups.iter().any(|group| group.starts_with(&expected))
+    }
 }
 
 #[derive(Default)]
@@ -56,6 +93,20 @@ impl State {
         self.users
             .values()
             .filter(|user| user.is_devops())
+            .collect()
+    }
+
+    pub fn package_maintainers(&self) -> Vec<&User> {
+        self.users
+            .values()
+            .filter(|user| user.is_package_maintainer())
+            .collect()
+    }
+
+    pub fn package_maintainers_by_role(&self, role: PackageMaintainerRole) -> Vec<&User> {
+        self.users
+            .values()
+            .filter(|user| user.has_package_maintainer_role(role))
             .collect()
     }
 
@@ -89,5 +140,27 @@ impl State {
                 .map(|id| id.eq(&gitlab_id))
                 .unwrap_or_else(|| false)
         })
+    }
+
+    pub fn package_maintainer_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
+        self.package_maintainers().into_iter().find(|user| {
+            user.gitlab_id
+                .map(|id| id.eq(&gitlab_id))
+                .unwrap_or_else(|| false)
+        })
+    }
+
+    pub fn package_maintainer_from_gitlab_id_and_role(
+        &self,
+        gitlab_id: u64,
+        role: PackageMaintainerRole,
+    ) -> Option<&User> {
+        self.package_maintainers_by_role(role)
+            .into_iter()
+            .find(|user| {
+                user.gitlab_id
+                    .map(|id| id.eq(&gitlab_id))
+                    .unwrap_or_else(|| false)
+            })
     }
 }

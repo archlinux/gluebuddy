@@ -7,7 +7,7 @@
 //!   - ensure nobody except devops has higher privileges
 
 use crate::args::Action;
-use crate::state::{State, User};
+use crate::state::{PackageMaintainerRole, State, User};
 
 use crate::components::gitlab::types::*;
 
@@ -110,6 +110,7 @@ impl GitLabGlue {
         self.update_archlinux_group_members(&action).await?;
         self.update_staff_group_members(&action).await?;
         self.update_devops_group_members(&action).await?;
+        self.update_package_maintainer_groups(&action).await?;
         self.update_infrastructure_project_members(&action).await?;
         Ok(())
     }
@@ -419,6 +420,90 @@ impl GitLabGlue {
                                 member,
                                 devops_group,
                                 DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL,
+                            )
+                            .await?
+                        {
+                            summary.change += 1;
+                        }
+                    }
+                },
+            }
+        }
+
+        println!("{}", summary);
+        println!("{}", util::format_separator());
+
+        Ok(())
+    }
+
+    async fn update_package_maintainer_groups(&self, action: &Action) -> Result<()> {
+        self.update_package_maintainer_group_members(action, PackageMaintainerRole::Core)
+            .await?;
+        self.update_package_maintainer_group_members(action, PackageMaintainerRole::JuniorCore)
+            .await?;
+        self.update_package_maintainer_group_members(action, PackageMaintainerRole::Regular)
+            .await?;
+        self.update_package_maintainer_group_members(action, PackageMaintainerRole::Junior)
+            .await?;
+        Ok(())
+    }
+
+    async fn update_package_maintainer_group_members(
+        &self,
+        action: &Action,
+        role: PackageMaintainerRole,
+    ) -> Result<()> {
+        let summary_label = format!(
+            "GitLab 'Arch Linux/Teams/Package Maintainer Team/{}' group members",
+            role.as_str()
+        );
+        let mut summary = PlanSummary::new(&summary_label);
+        let team_path = role.to_path();
+        let package_maintainer_group =
+            format!("archlinux/teams/package-maintainer-team/{team_path}");
+        let group_members = self.get_group_members(&package_maintainer_group).await?;
+
+        let state = self.state.lock().await;
+        for staff in state.package_maintainers_by_role(role) {
+            if let Some(gitlab_id) = staff.gitlab_id {
+                if !group_members.iter().map(|e| e.id).any(|e| e == gitlab_id)
+                    && self
+                        .add_group_member(
+                            action,
+                            staff,
+                            &package_maintainer_group,
+                            DEFAULT_STAFF_GROUP_ACCESS_LEVEL,
+                        )
+                        .await?
+                {
+                    summary.add += 1;
+                }
+            }
+        }
+
+        for member in &group_members {
+            if is_archlinux_bot(member) {
+                continue;
+            }
+            match state.package_maintainer_from_gitlab_id_and_role(member.id, role) {
+                None => {
+                    if self
+                        .remove_group_member(action, &state, member, &package_maintainer_group)
+                        .await?
+                    {
+                        summary.destroy += 1;
+                    }
+                }
+                Some(user) => match util::access_level_from_u64(member.access_level) {
+                    DEFAULT_STAFF_GROUP_ACCESS_LEVEL => {}
+                    _ => {
+                        if self
+                            .edit_group_member_access_level(
+                                action,
+                                user,
+                                member,
+                                &package_maintainer_group,
+                                DEFAULT_STAFF_GROUP_ACCESS_LEVEL,
                             )
                             .await?
                         {
