@@ -30,6 +30,7 @@ use gitlab::api::users::ExternalProvider;
 
 const DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Minimal;
 const DEFAULT_STAFF_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Reporter;
+const DEFAULT_PACKAGE_MAINTAINER_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 const DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 const MAX_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 
@@ -472,7 +473,7 @@ impl GitLabGlue {
                             action,
                             staff,
                             &package_maintainer_group,
-                            DEFAULT_STAFF_GROUP_ACCESS_LEVEL,
+                            DEFAULT_PACKAGE_MAINTAINER_ACCESS_LEVEL,
                         )
                         .await?
                 {
@@ -495,7 +496,7 @@ impl GitLabGlue {
                     }
                 }
                 Some(user) => match util::access_level_from_u64(member.access_level) {
-                    DEFAULT_STAFF_GROUP_ACCESS_LEVEL => {}
+                    DEFAULT_PACKAGE_MAINTAINER_ACCESS_LEVEL => {}
                     _ => {
                         if self
                             .edit_group_member_access_level(
@@ -503,7 +504,7 @@ impl GitLabGlue {
                                 user,
                                 member,
                                 &package_maintainer_group,
-                                DEFAULT_STAFF_GROUP_ACCESS_LEVEL,
+                                DEFAULT_PACKAGE_MAINTAINER_ACCESS_LEVEL,
                             )
                             .await?
                         {
