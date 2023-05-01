@@ -40,6 +40,9 @@ const GITLAB_BOT: &str = "archbot";
 const MAIN_BRANCH: &str = "main";
 const ALL_TAGS: &str = "*";
 
+const GROUP_ROOT: &str = "archlinux";
+const GROUP_PACKAGES: &str = "archlinux/packaging/packages";
+
 pub struct GitLabGlue {
     client: AsyncGitlab,
     state: Arc<Mutex<State>>,
@@ -117,9 +120,8 @@ impl GitLabGlue {
     }
 
     async fn update_archlinux_group_recursively(&self, action: &Action) -> Result<()> {
-        let group = "archlinux";
         let endpoint = gitlab::api::groups::Group::builder()
-            .group(group)
+            .group(GROUP_ROOT)
             .build()
             .unwrap();
         let root: Group = endpoint.query_async(&self.client).await?;
@@ -136,8 +138,6 @@ impl GitLabGlue {
                     for subgroup in subgroups {
                         to_visit.push(subgroup);
                     }
-
-                    // TODO: disable request_access_enabled, API is missing to edit
 
                     let label = format!("GitLab '{}' group members", group.full_name);
                     let mut summary = PlanSummary::new(&label);
@@ -192,10 +192,22 @@ impl GitLabGlue {
                             format!("GitLab '{}' project settings", project.name_with_namespace);
                         let mut summary = PlanSummary::new(&label);
 
-                        match self.apply_project_settings(action, &project).await? {
-                            false => {}
-                            true => {
-                                summary.change += 1;
+                        if project.path_with_namespace.starts_with(GROUP_PACKAGES) {
+                            match self
+                                .apply_package_project_settings(action, &project)
+                                .await?
+                            {
+                                false => {}
+                                true => {
+                                    summary.change += 1;
+                                }
+                            }
+                        } else {
+                            match self.apply_project_settings(action, &project).await? {
+                                false => {}
+                                true => {
+                                    summary.change += 1;
+                                }
                             }
                         }
 
@@ -879,6 +891,7 @@ impl GitLabGlue {
         project: &GroupProjects,
     ) -> Result<bool> {
         let expected_request_access_enabled = false;
+        let expected_only_allow_merge_if_all_discussions_are_resolved = true;
         let expected_snippets_access_level = ProjectFeatureAccessLevel::Disabled;
 
         if project.request_access_enabled == expected_request_access_enabled
@@ -892,12 +905,26 @@ impl GitLabGlue {
             util::format_gitlab_project_settings(
                 &project.path_with_namespace,
                 project.request_access_enabled,
+                project.issues_access_level,
+                project.merge_requests_access_level,
+                project.merge_method,
+                project.only_allow_merge_if_all_discussions_are_resolved,
+                project.builds_access_level,
+                project.container_registry_access_level,
+                project.packages_enabled,
                 project.snippets_access_level,
             )
             .as_str(),
             util::format_gitlab_project_settings(
                 &project.path_with_namespace,
                 expected_request_access_enabled,
+                project.issues_access_level,
+                project.merge_requests_access_level,
+                project.merge_method,
+                expected_only_allow_merge_if_all_discussions_are_resolved,
+                project.builds_access_level,
+                project.container_registry_access_level,
+                project.packages_enabled,
                 expected_snippets_access_level,
             )
             .as_str(),
@@ -906,6 +933,93 @@ impl GitLabGlue {
             let endpoint = gitlab::api::projects::EditProject::builder()
                 .project(project.id)
                 .request_access_enabled(expected_request_access_enabled)
+                .only_allow_merge_if_all_discussions_are_resolved(
+                    expected_only_allow_merge_if_all_discussions_are_resolved,
+                )
+                .snippets_access_level(expected_snippets_access_level.as_gitlab_type())
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await?;
+        }
+        Ok(true)
+    }
+
+    async fn apply_package_project_settings(
+        &self,
+        action: &Action,
+        project: &GroupProjects,
+    ) -> Result<bool> {
+        let expected_request_access_enabled = false;
+        let expected_issues_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_merge_requests_access_level = ProjectFeatureAccessLevel::Private;
+        let expected_merge_method = ProjectMergeMethod::FastForward;
+        let expected_only_allow_merge_if_all_discussions_are_resolved = true;
+        let expected_builds_access_level = ProjectFeatureAccessLevel::Disabled;
+        // let expected_releases_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_container_registry_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_packages_enabled = false;
+        let expected_snippets_access_level = ProjectFeatureAccessLevel::Disabled;
+
+        if project.request_access_enabled == expected_request_access_enabled
+            && project.issues_access_level == expected_issues_access_level
+            && project.merge_requests_access_level == expected_merge_requests_access_level
+            && project.merge_method == expected_merge_method
+            && project.only_allow_merge_if_all_discussions_are_resolved
+                == expected_only_allow_merge_if_all_discussions_are_resolved
+            && project.builds_access_level == expected_builds_access_level
+            && project.container_registry_access_level == expected_container_registry_access_level
+            && project.packages_enabled == expected_packages_enabled
+            && project.snippets_access_level == expected_snippets_access_level
+        {
+            return Ok(false);
+        }
+
+        debug!("edit project settings for {}", project.name_with_namespace);
+        util::print_diff(
+            util::format_gitlab_project_settings(
+                &project.path_with_namespace,
+                project.request_access_enabled,
+                project.issues_access_level,
+                project.merge_requests_access_level,
+                project.merge_method,
+                project.only_allow_merge_if_all_discussions_are_resolved,
+                project.builds_access_level,
+                project.container_registry_access_level,
+                project.packages_enabled,
+                project.snippets_access_level,
+            )
+            .as_str(),
+            util::format_gitlab_project_settings(
+                &project.path_with_namespace,
+                expected_request_access_enabled,
+                expected_issues_access_level,
+                expected_merge_requests_access_level,
+                expected_merge_method,
+                expected_only_allow_merge_if_all_discussions_are_resolved,
+                expected_builds_access_level,
+                expected_container_registry_access_level,
+                expected_packages_enabled,
+                expected_snippets_access_level,
+            )
+            .as_str(),
+        )?;
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::projects::EditProject::builder()
+                .project(project.id)
+                .request_access_enabled(expected_request_access_enabled)
+                .issues_access_level(expected_issues_access_level.as_gitlab_type())
+                .merge_requests_access_level(expected_merge_requests_access_level.as_gitlab_type())
+                .merge_method(expected_merge_method.as_gitlab_type())
+                .only_allow_merge_if_all_discussions_are_resolved(
+                    expected_only_allow_merge_if_all_discussions_are_resolved,
+                )
+                .builds_access_level(expected_builds_access_level.as_gitlab_type())
+                .container_registry_access_level(
+                    expected_container_registry_access_level.as_gitlab_type(),
+                )
+                .packages_enabled(expected_packages_enabled)
                 .snippets_access_level(expected_snippets_access_level.as_gitlab_type())
                 .build()
                 .unwrap();

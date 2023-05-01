@@ -1,5 +1,5 @@
 use gitlab::api::groups::BranchProtection;
-use gitlab::api::projects::FeatureAccessLevel;
+use gitlab::api::projects::{FeatureAccessLevel, MergeMethod};
 use serde::Deserialize;
 use serde_repr::*;
 use std::fmt::{self, Display, Formatter};
@@ -128,6 +128,38 @@ impl GroupBranchProtection {
     }
 }
 
+/// How merge requests should be merged when using the "Merge" button.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectMergeMethod {
+    /// Always create a merge commit.
+    Merge,
+    /// Always create a merge commit, but require that the branch be fast-forward capable.
+    RebaseMerge,
+    /// Only fast-forward merges are allowed.
+    #[serde(rename = "ff")]
+    FastForward,
+}
+
+impl ProjectMergeMethod {
+    /// The variable type query parameter.
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Merge => "merge",
+            Self::RebaseMerge => "rebase_merge",
+            Self::FastForward => "ff",
+        }
+    }
+
+    pub fn as_gitlab_type(self) -> MergeMethod {
+        match self {
+            ProjectMergeMethod::Merge => MergeMethod::Merge,
+            ProjectMergeMethod::RebaseMerge => MergeMethod::RebaseMerge,
+            ProjectMergeMethod::FastForward => MergeMethod::FastForward,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct GroupProjects {
     pub id: u64,
@@ -137,7 +169,14 @@ pub struct GroupProjects {
     pub path_with_namespace: String,
     pub visibility: ProjectVisibilityLevel,
     pub request_access_enabled: bool,
-    pub container_registry_enabled: bool,
+    pub issues_access_level: ProjectFeatureAccessLevel,
+    pub merge_requests_access_level: ProjectFeatureAccessLevel,
+    pub merge_method: ProjectMergeMethod,
+    pub only_allow_merge_if_all_discussions_are_resolved: bool,
+    pub builds_access_level: ProjectFeatureAccessLevel,
+    pub releases_access_level: ProjectFeatureAccessLevel,
+    pub container_registry_access_level: ProjectFeatureAccessLevel,
+    pub packages_enabled: bool,
     pub snippets_access_level: ProjectFeatureAccessLevel,
 }
 

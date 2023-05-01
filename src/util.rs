@@ -1,4 +1,4 @@
-use crate::components::gitlab::types::ProjectFeatureAccessLevel;
+use crate::components::gitlab::types::{ProjectFeatureAccessLevel, ProjectMergeMethod};
 use anyhow::{Context, Result};
 use difference::{Changeset, Difference};
 use gitlab::api::common::AccessLevel;
@@ -77,19 +77,41 @@ pub fn format_gitlab_user(username: &str, admin: bool) -> String {
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn format_gitlab_project_settings(
     namespace: &str,
     request_access_enabled: bool,
+    issues_access_level: ProjectFeatureAccessLevel,
+    merge_requests_access_level: ProjectFeatureAccessLevel,
+    merge_method: ProjectMergeMethod,
+    only_allow_merge_if_all_discussions_are_resolved: bool,
+    builds_access_level: ProjectFeatureAccessLevel,
+    container_registry_access_level: ProjectFeatureAccessLevel,
+    packages_enabled: bool,
     snippets_access_level: ProjectFeatureAccessLevel,
 ) -> String {
     format!(
         "gitlab_project_setting {{\n\
-        \tnamespace              = {}\n\
-        \trequest_access_enabled = {}\n\
-        \tsnippets_access_level  = {}\n\
+        \tnamespace                       = {}\n\
+        \trequest_access_enabled          = {}\n\
+        \tissues_access_level             = {}\n\
+        \tmerge_requests_access_level     = {}\n\
+        \tmerge_method                    = {}\n\
+        \tonly_allow_merge_if_all_discussions_are_resolved = {}\n\
+        \tbuilds_access_level             = {}\n\
+        \tcontainer_registry_access_level = {}\n\
+        \tpackages_enabled                = {}\n\
+        \tsnippets_access_level           = {}\n\
         }}",
         namespace,
         request_access_enabled,
+        issues_access_level.as_str(),
+        merge_requests_access_level.as_str(),
+        merge_method.as_str(),
+        only_allow_merge_if_all_discussions_are_resolved,
+        builds_access_level.as_str(),
+        container_registry_access_level.as_str(),
+        packages_enabled,
         snippets_access_level.as_str(),
     )
 }
