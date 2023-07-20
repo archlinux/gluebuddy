@@ -169,6 +169,7 @@ pub struct GroupProjects {
     pub path_with_namespace: String,
     pub visibility: ProjectVisibilityLevel,
     pub request_access_enabled: bool,
+    pub lfs_enabled: bool,
     pub issues_access_level: ProjectFeatureAccessLevel,
     pub merge_requests_access_level: ProjectFeatureAccessLevel,
     pub merge_method: ProjectMergeMethod,

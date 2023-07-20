@@ -89,6 +89,7 @@ pub fn format_gitlab_project_settings(
     container_registry_access_level: ProjectFeatureAccessLevel,
     packages_enabled: bool,
     snippets_access_level: ProjectFeatureAccessLevel,
+    lfs_enabled: bool,
 ) -> String {
     format!(
         "gitlab_project_setting {{\n\
@@ -102,6 +103,7 @@ pub fn format_gitlab_project_settings(
         \tcontainer_registry_access_level = {}\n\
         \tpackages_enabled                = {}\n\
         \tsnippets_access_level           = {}\n\
+        \tlfs_enabled                     = {}\n\
         }}",
         namespace,
         request_access_enabled,
@@ -113,6 +115,7 @@ pub fn format_gitlab_project_settings(
         container_registry_access_level.as_str(),
         packages_enabled,
         snippets_access_level.as_str(),
+        lfs_enabled,
     )
 }
 

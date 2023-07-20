@@ -913,6 +913,7 @@ impl GitLabGlue {
                 project.container_registry_access_level,
                 project.packages_enabled,
                 project.snippets_access_level,
+                project.lfs_enabled,
             )
             .as_str(),
             util::format_gitlab_project_settings(
@@ -926,6 +927,7 @@ impl GitLabGlue {
                 project.container_registry_access_level,
                 project.packages_enabled,
                 expected_snippets_access_level,
+                project.lfs_enabled,
             )
             .as_str(),
         )?;
@@ -961,6 +963,7 @@ impl GitLabGlue {
         let expected_container_registry_access_level = ProjectFeatureAccessLevel::Disabled;
         let expected_packages_enabled = false;
         let expected_snippets_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_lfs_enabled = false;
 
         if project.request_access_enabled == expected_request_access_enabled
             && project.issues_access_level == expected_issues_access_level
@@ -972,6 +975,7 @@ impl GitLabGlue {
             && project.container_registry_access_level == expected_container_registry_access_level
             && project.packages_enabled == expected_packages_enabled
             && project.snippets_access_level == expected_snippets_access_level
+            && project.lfs_enabled == expected_lfs_enabled
         {
             return Ok(false);
         }
@@ -989,6 +993,7 @@ impl GitLabGlue {
                 project.container_registry_access_level,
                 project.packages_enabled,
                 project.snippets_access_level,
+                project.lfs_enabled,
             )
             .as_str(),
             util::format_gitlab_project_settings(
@@ -1002,6 +1007,7 @@ impl GitLabGlue {
                 expected_container_registry_access_level,
                 expected_packages_enabled,
                 expected_snippets_access_level,
+                expected_lfs_enabled,
             )
             .as_str(),
         )?;
@@ -1021,6 +1027,7 @@ impl GitLabGlue {
                 )
                 .packages_enabled(expected_packages_enabled)
                 .snippets_access_level(expected_snippets_access_level.as_gitlab_type())
+                .lfs_enabled(expected_lfs_enabled)
                 .build()
                 .unwrap();
             gitlab::api::ignore(endpoint)
