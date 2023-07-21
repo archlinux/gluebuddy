@@ -38,7 +38,7 @@ const GITLAB_OWNER: &str = "archceo";
 const GITLAB_BOT: &str = "archbot";
 
 const MAIN_BRANCH: &str = "main";
-const ALL_TAGS: &str = "*";
+const ALL_TAGS_WILDCARD: &str = "*";
 
 const GROUP_ROOT: &str = "archlinux";
 const GROUP_PACKAGES: &str = "archlinux/packaging/packages";
@@ -255,6 +255,29 @@ impl GitLabGlue {
                                 }
                             }
                         }
+
+                        println!("{}", summary);
+                        println!("{}", util::format_separator());
+
+                        let label =
+                            format!("GitLab '{}' protected tags", project.name_with_namespace);
+                        let mut summary = PlanSummary::new(&label);
+
+                        let protected_tags = self.get_protected_tags(&project).await?;
+
+                        let protected_tag = protected_tags
+                            .iter()
+                            .find(|tag| tag.name.eq(ALL_TAGS_WILDCARD));
+
+                        self.protect_tag(
+                            action,
+                            &mut summary,
+                            &project,
+                            ALL_TAGS_WILDCARD,
+                            MyProtectedAccessLevel::Developer,
+                            protected_tag,
+                        )
+                        .await?;
 
                         println!("{}", summary);
                         println!("{}", util::format_separator());
@@ -1063,6 +1086,116 @@ impl GitLabGlue {
         }
         Ok(true)
     }
+
+    async fn get_protected_tags(&self, project: &GroupProjects) -> Result<Vec<ProtectedTag>> {
+        let endpoint = gitlab::api::projects::protected_tags::ProtectedTags::builder()
+            .project(project.id)
+            .build()
+            .unwrap();
+        let protected_tag: Vec<ProtectedTag> = endpoint.query_async(&self.client).await?;
+        Ok(protected_tag)
+    }
+
+    async fn get_protected_tag(&self, project: &GroupProjects, tag: &str) -> Result<ProtectedTag> {
+        let endpoint = gitlab::api::projects::protected_tags::ProtectedTag::builder()
+            .project(project.id)
+            .name(tag)
+            .build()
+            .unwrap();
+        let protected_tag: ProtectedTag = endpoint.query_async(&self.client).await?;
+        Ok(protected_tag)
+    }
+
+    async fn protect_tag(
+        &self,
+        action: &Action,
+        plan: &mut PlanSummary,
+        project: &GroupProjects,
+        tag: &str,
+        allowed_to_create: MyProtectedAccessLevel,
+        current_tag: Option<&ProtectedTag>,
+    ) -> Result<bool> {
+        debug!(
+            "protecting tag {} for project {}",
+            tag, project.name_with_namespace
+        );
+
+        let mut protect = false;
+        let mut unprotect = false;
+
+        let access_vec = vec![allowed_to_create.clone()];
+        match current_tag {
+            Some(current_tag) => {
+                let current_levels: Vec<MyProtectedAccessLevel> = current_tag
+                    .create_access_levels
+                    .iter()
+                    .map(|level| level.as_gitlab_type())
+                    .collect();
+
+                if current_levels.len() > 1 || !current_levels.contains(&allowed_to_create) {
+                    plan.change += 1;
+                    protect = true;
+                    unprotect = true;
+
+                    util::print_diff(
+                        util::format_gitlab_project_protected_tag(
+                            &project.path_with_namespace,
+                            &current_tag.name,
+                            &current_levels,
+                        )
+                        .as_str(),
+                        util::format_gitlab_project_protected_tag(
+                            &project.path_with_namespace,
+                            tag,
+                            &access_vec,
+                        )
+                        .as_str(),
+                    )?;
+                }
+            }
+            None => {
+                plan.add += 1;
+                protect = true;
+
+                util::print_diff(
+                    "",
+                    util::format_gitlab_project_protected_tag(
+                        &project.path_with_namespace,
+                        tag,
+                        &access_vec,
+                    )
+                    .as_str(),
+                )?;
+            }
+        }
+
+        if let Action::Apply = action {
+            if protect {
+                if unprotect {
+                    // TODO: API has to PATCH, remove unprotect if its upstreamed
+                    let endpoint = gitlab::api::projects::protected_tags::UnprotectTag::builder()
+                        .project(project.id)
+                        .name(tag)
+                        .build()
+                        .unwrap();
+                    gitlab::api::ignore(endpoint)
+                        .query_async(&self.client)
+                        .await?;
+                }
+
+                let endpoint = gitlab::api::projects::protected_tags::ProtectTag::builder()
+                    .project(project.id)
+                    .name(tag)
+                    .create_access_level(allowed_to_create.as_gitlab_type())
+                    .build()
+                    .unwrap();
+                gitlab::api::ignore(endpoint)
+                    .query_async(&self.client)
+                    .await?;
+            }
+        }
+        Ok(true)
+    }
 }
 
 fn is_archlinux_bot(member: &GitLabMember) -> bool {
@@ -1128,16 +1261,6 @@ fn unprotect_branch(client: &Gitlab, project: &GroupProjects, branch: &str) -> R
     Ok(())
 }
 
-fn get_protected_tag(client: &Gitlab, project: &GroupProjects, tag: &str) -> Result<ProtectedTag> {
-    let endpoint = gitlab::api::projects::protected_tags::ProtectedTag::builder()
-        .project(project.id)
-        .name(tag)
-        .build()
-        .unwrap();
-    let protected_tag: ProtectedTag = endpoint.query(client)?;
-    Ok(protected_tag)
-}
-
 fn unprotect_tag(client: &Gitlab, project: &GroupProjects, tag: &str) -> Result<()> {
     let endpoint = gitlab::api::projects::protected_tags::UnprotectTag::builder()
         .project(project.id)
@@ -1146,18 +1269,6 @@ fn unprotect_tag(client: &Gitlab, project: &GroupProjects, tag: &str) -> Result<
         .unwrap();
     gitlab::api::ignore(endpoint).query(client)?;
     Ok(())
-}
-
-fn protect_tag(client: &Gitlab, project: &GroupProjects, tag: &str) -> Result<ProtectedTag> {
-    debug!("protecting tag * for project {}", project.name);
-    let endpoint = gitlab::api::projects::protected_tags::ProtectTag::builder()
-        .project(project.id)
-        .name(tag)
-        .create_access_level(gitlab::api::common::ProtectedAccessLevel::Developer)
-        .build()
-        .unwrap();
-    let result: ProtectedTag = endpoint.query(client)?;
-    Ok(result)
 }
 
 #[cfg(test)]

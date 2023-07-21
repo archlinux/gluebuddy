@@ -1,7 +1,10 @@
-use crate::components::gitlab::types::{ProjectFeatureAccessLevel, ProjectMergeMethod};
+use crate::components::gitlab::types::{
+    MyProtectedAccessLevel, ProjectFeatureAccessLevel, ProjectMergeMethod,
+};
 use anyhow::{Context, Result};
 use difference::{Changeset, Difference};
 use gitlab::api::common::AccessLevel;
+use itertools::Itertools;
 
 pub fn print_diff(text1: &str, text2: &str) -> Result<()> {
     let Changeset { diffs, .. } = Changeset::new(text1, text2, "\n");
@@ -126,6 +129,26 @@ pub fn format_gitlab_group_settings(path: &str, request_access_enabled: bool) ->
         \trequest_access_enabled = {}\n\
         }}",
         path, request_access_enabled,
+    )
+}
+
+pub fn format_gitlab_project_protected_tag(
+    namespace: &str,
+    name: &str,
+    create_access_level: &[MyProtectedAccessLevel],
+) -> String {
+    format!(
+        "gitlab_project_protected_tag {{\n\
+        \tnamespace           = {}\n\
+        \tname                = {}\n\
+        \tcreate_access_level = {}\n\
+        }}",
+        namespace,
+        name,
+        create_access_level
+            .iter()
+            .map(|access| access.as_str())
+            .join(", ")
     )
 }
 

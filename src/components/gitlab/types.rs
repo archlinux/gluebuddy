@@ -187,6 +187,21 @@ pub struct ProtectedAccessLevel {
     pub access_level_description: String,
 }
 
+impl ProtectedAccessLevel {
+    pub fn as_str(&self) -> &str {
+        &self.access_level_description
+    }
+
+    pub fn as_gitlab_type(&self) -> MyProtectedAccessLevel {
+        match self.access_level {
+            60 => MyProtectedAccessLevel::Admin,
+            40 => MyProtectedAccessLevel::Maintainer,
+            30 => MyProtectedAccessLevel::Developer,
+            _ => MyProtectedAccessLevel::NoAccess,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ProtectedBranch {
     pub id: u64,
@@ -201,7 +216,7 @@ pub struct ProtectedTag {
     pub create_access_levels: Vec<ProtectedAccessLevel>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum MyProtectedAccessLevel {
     /// The action is not allowed at all.
     NoAccess,
@@ -211,6 +226,27 @@ pub enum MyProtectedAccessLevel {
     Maintainer,
     /// Only administrators may perform the action.
     Admin,
+}
+
+impl MyProtectedAccessLevel {
+    pub fn as_gitlab_type(&self) -> gitlab::api::common::ProtectedAccessLevel {
+        match self {
+            Self::Admin => gitlab::api::common::ProtectedAccessLevel::Admin,
+            Self::Maintainer => gitlab::api::common::ProtectedAccessLevel::Maintainer,
+            Self::Developer => gitlab::api::common::ProtectedAccessLevel::Developer,
+            Self::NoAccess => gitlab::api::common::ProtectedAccessLevel::NoAccess,
+        }
+    }
+
+    /// The variable type query parameter.
+    pub(crate) fn as_str(&self) -> &'static str {
+        match self {
+            Self::Admin => "admin",
+            Self::Maintainer => "maintainer",
+            Self::Developer => "developer",
+            Self::NoAccess => "no_access",
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
