@@ -104,7 +104,7 @@ impl Keycloak {
 
     pub async fn gather(&self) -> Result<()> {
         info!("Gathering Keycloak state");
-        let root_groups = vec!["Arch Linux Staff", "External Contributors"];
+        let root_groups = ["Arch Linux Staff", "External Contributors"];
 
         let all_groups = self
             .admin
