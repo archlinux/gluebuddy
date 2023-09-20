@@ -564,14 +564,14 @@ impl GitLabGlue {
         let mut summary = PlanSummary::new("GitLab 'Arch Linux/Teams/Bug Wranglers' group members");
         let state = self.state.lock().await;
 
-        for staff in state.staff() {
-            if let Some(gitlab_id) = staff.gitlab_id {
+        for user in state.bug_wranglers() {
+            if let Some(gitlab_id) = user.gitlab_id {
                 if !archlinux_group_members
                     .iter()
                     .map(|e| e.id)
                     .any(|e| e == gitlab_id)
                     && self
-                        .add_group_member(action, staff, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
+                        .add_group_member(action, user, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
                         .await?
                 {
                     summary.add += 1;
@@ -583,7 +583,7 @@ impl GitLabGlue {
             if is_archlinux_bot(member) {
                 continue;
             }
-            match state.staff_from_gitlab_id(member.id) {
+            match state.bug_wrangler_from_gitlab_id(member.id) {
                 None => {
                     if self
                         .remove_group_member(action, &state, member, group)

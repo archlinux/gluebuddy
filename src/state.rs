@@ -63,6 +63,12 @@ impl User {
             .any(|group| group.starts_with("/Arch Linux Staff/Package Maintainer Team/"))
     }
 
+    pub fn is_bug_wrangler(&self) -> bool {
+        self.groups
+            .iter()
+            .any(|group| group.starts_with("/Arch Linux Staff/Bug Wranglers"))
+    }
+
     pub fn has_package_maintainer_role(&self, role: PackageMaintainerRole) -> bool {
         let expected = format!(
             "/Arch Linux Staff/Package Maintainer Team/{}",
@@ -107,6 +113,13 @@ impl State {
         self.users
             .values()
             .filter(|user| user.has_package_maintainer_role(role))
+            .collect()
+    }
+
+    pub fn bug_wranglers(&self) -> Vec<&User> {
+        self.users
+            .values()
+            .filter(|user| user.is_bug_wrangler())
             .collect()
     }
 
@@ -162,5 +175,13 @@ impl State {
                     .map(|id| id.eq(&gitlab_id))
                     .unwrap_or_else(|| false)
             })
+    }
+
+    pub fn bug_wrangler_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
+        self.bug_wranglers().into_iter().find(|user| {
+            user.gitlab_id
+                .map(|id| id.eq(&gitlab_id))
+                .unwrap_or_else(|| false)
+        })
     }
 }
