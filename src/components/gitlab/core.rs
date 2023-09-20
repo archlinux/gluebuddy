@@ -115,6 +115,7 @@ impl GitLabGlue {
         self.update_staff_group_members(&action).await?;
         self.update_devops_group_members(&action).await?;
         self.update_package_maintainer_groups(&action).await?;
+        self.update_bug_wranglers_group_members(&action).await?;
         self.update_infrastructure_project_members(&action).await?;
         Ok(())
     }
@@ -547,6 +548,64 @@ impl GitLabGlue {
                         }
                     }
                 },
+            }
+        }
+
+        println!("{}", summary);
+        println!("{}", util::format_separator());
+
+        Ok(())
+    }
+
+    async fn update_bug_wranglers_group_members(&self, action: &Action) -> Result<()> {
+        let group = "archlinux/teams/bug-wranglers";
+        let archlinux_group_members = self.get_group_members(group).await?;
+
+        let mut summary = PlanSummary::new("GitLab 'Arch Linux/Teams/Bug Wranglers' group members");
+        let state = self.state.lock().await;
+
+        for staff in state.staff() {
+            if let Some(gitlab_id) = staff.gitlab_id {
+                if !archlinux_group_members
+                    .iter()
+                    .map(|e| e.id)
+                    .any(|e| e == gitlab_id)
+                    && self
+                        .add_group_member(action, staff, group, DEFAULT_STAFF_GROUP_ACCESS_LEVEL)
+                        .await?
+                {
+                    summary.add += 1;
+                }
+            }
+        }
+
+        for member in &archlinux_group_members {
+            if is_archlinux_bot(member) {
+                continue;
+            }
+            match state.staff_from_gitlab_id(member.id) {
+                None => {
+                    if self
+                        .remove_group_member(action, &state, member, group)
+                        .await?
+                    {
+                        summary.destroy += 1;
+                    }
+                }
+                Some(user) => {
+                    if self
+                        .edit_group_member_access_level(
+                            action,
+                            user,
+                            member,
+                            group,
+                            DEFAULT_STAFF_GROUP_ACCESS_LEVEL,
+                        )
+                        .await?
+                    {
+                        summary.change += 1;
+                    }
+                }
             }
         }
 
