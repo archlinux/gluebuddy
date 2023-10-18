@@ -1,7 +1,7 @@
 use crate::components::gitlab::types::{
     MyProtectedAccessLevel, ProjectFeatureAccessLevel, ProjectMergeMethod,
 };
-use anyhow::{Context, Result};
+use anyhow::Result;
 use difference::{Changeset, Difference};
 use gitlab::api::common::AccessLevel;
 use itertools::Itertools;
@@ -9,33 +9,50 @@ use itertools::Itertools;
 pub fn print_diff(text1: &str, text2: &str) -> Result<()> {
     let Changeset { diffs, .. } = Changeset::new(text1, text2, "\n");
 
-    let mut stdout = term::stdout().context("failed to get stdout")?;
-
     for diff in diffs {
         match diff {
             Difference::Same(ref x) => {
                 for line in x.lines() {
-                    stdout.reset()?;
-                    writeln!(stdout, " {}", line)?;
+                    let line = format!(" {}", line);
+                    writeln(&line, None)?;
                 }
             }
             Difference::Add(ref x) => {
                 for line in x.lines() {
-                    stdout.fg(term::color::GREEN)?;
-                    writeln!(stdout, "+{}", line)?;
+                    let line = format!("+{}", line);
+                    writeln(&line, Some(term::color::GREEN))?;
                 }
             }
             Difference::Rem(ref x) => {
                 for line in x.lines() {
-                    stdout.fg(term::color::RED)?;
-                    writeln!(stdout, "-{}", line)?;
+                    let line = format!("-{}", line);
+                    writeln(&line, Some(term::color::RED))?;
                 }
             }
         }
     }
 
-    stdout.reset()?;
-    stdout.flush()?;
+    Ok(())
+}
+
+pub fn writeln(line: &str, fg: Option<term::color::Color>) -> Result<()> {
+    let stdout = term::stdout();
+
+    match stdout {
+        Some(mut stdout) => {
+            match fg {
+                Some(color) => stdout.fg(color)?,
+                None => stdout.reset()?,
+            }
+            writeln!(stdout, "{}", line)?;
+
+            stdout.reset()?;
+            stdout.flush()?;
+        }
+        None => {
+            println!("{}", line);
+        }
+    }
 
     Ok(())
 }
