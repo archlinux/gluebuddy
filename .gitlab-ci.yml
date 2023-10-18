@@ -7,18 +7,14 @@ stages:
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
 
-cache:
-  paths:
-  - .cargo/
-  - target/
-
 build:
   stage: build
   needs: []
   artifacts:
     paths:
+      - .cargo
       - target
-    expire_in: 1 day
+    expire_in: 30 minutes
   script:
     - cargo build --release --locked
 
