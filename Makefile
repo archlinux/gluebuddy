@@ -4,6 +4,7 @@ SED := sed
 GIT := git
 GPG := gpg
 
+PROJECT=gluebuddy
 TARBALLDIR ?= target/release/tarball
 
 DEBUG := 0
@@ -38,4 +39,6 @@ release: all
 		$(GIT) tag --sign --message "version: release v$$TAG" v$$TAG && \
 		$(GIT) archive --format tar --prefix=gluebuddy-v$$TAG/ v$$TAG | gzip -cn > $(TARBALLDIR)/gluebuddy-v$$TAG.tar.gz && \
 		$(GPG) --detach-sign $(TARBALLDIR)/gluebuddy-v$$TAG.tar.gz && \
-		$(GPG) --detach-sign --yes target/release/gluebuddy
+		$(GPG) --detach-sign --yes target/release/$(PROJECT) && \
+		$(GIT) push --tags origin main && \
+		glab release create v$$TAG $(TARBALLDIR)/$(PROJECT)-v$$VERSION.tar.gz* target/release/$(PROJECT) target/release/$(PROJECT).sig
