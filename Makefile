@@ -32,13 +32,13 @@ lint:
 
 release: all
 	$(INSTALL) -d $(TARBALLDIR)
-	@read -p 'version> ' TAG && \
-		$(SED) -E "s|^version = .*|version = \"$$TAG\"|" -i Cargo.toml && \
+	@read -p 'version> ' VERSION && \
+		$(SED) -E "s|^version = .*|version = \"$$VERSION\"|" -i Cargo.toml && \
 		$(CARGO) build --release && \
-		$(GIT) commit --gpg-sign --message "version: release v$$TAG" Cargo.toml Cargo.lock && \
-		$(GIT) tag --sign --message "version: release v$$TAG" v$$TAG && \
-		$(GIT) archive --format tar --prefix=gluebuddy-v$$TAG/ v$$TAG | gzip -cn > $(TARBALLDIR)/gluebuddy-v$$TAG.tar.gz && \
-		$(GPG) --detach-sign $(TARBALLDIR)/gluebuddy-v$$TAG.tar.gz && \
+		$(GIT) commit --gpg-sign --message "version: release v$$VERSION" Cargo.toml Cargo.lock && \
+		$(GIT) tag --sign --message "version: release v$$VERSION" v$$VERSION && \
+		$(GIT) archive --format tar --prefix=gluebuddy-v$$VERSION/ v$$VERSION | gzip -cn > $(TARBALLDIR)/gluebuddy-v$$VERSION.tar.gz && \
+		$(GPG) --detach-sign $(TARBALLDIR)/gluebuddy-v$$VERSION.tar.gz && \
 		$(GPG) --detach-sign --yes target/release/$(PROJECT) && \
 		$(GIT) push --tags origin main && \
-		glab release create v$$TAG $(TARBALLDIR)/$(PROJECT)-v$$VERSION.tar.gz* target/release/$(PROJECT) target/release/$(PROJECT).sig
+		glab release create v$$VERSION $(TARBALLDIR)/$(PROJECT)-v$$VERSION.tar.gz* target/release/$(PROJECT) target/release/$(PROJECT).sig
