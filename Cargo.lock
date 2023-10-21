@@ -669,7 +669,7 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "gluebuddy"
-version = "0.5.9"
+version = "0.5.10"
 dependencies = [
  "anyhow",
  "clap",
