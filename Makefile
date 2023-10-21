@@ -32,6 +32,7 @@ lint:
 
 release: all
 	$(INSTALL) -d $(TARBALLDIR)
+	@$(CARGO) pkgid | $(SED) 's/.*#/current version: /'
 	@read -p 'version> ' VERSION && \
 		$(SED) -E "s|^version = .*|version = \"$$VERSION\"|" -i Cargo.toml && \
 		$(CARGO) build --release && \
