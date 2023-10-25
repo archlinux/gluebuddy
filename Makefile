@@ -42,4 +42,4 @@ release: all
 		$(GPG) --detach-sign $(TARBALLDIR)/gluebuddy-v$$VERSION.tar.gz && \
 		$(GPG) --detach-sign --yes target/release/$(PROJECT) && \
 		$(GIT) push --tags origin main && \
-		glab release create v$$VERSION $(TARBALLDIR)/$(PROJECT)-v$$VERSION.tar.gz* target/release/$(PROJECT) target/release/$(PROJECT).sig
+		GITLAB_HOST=gitlab.archlinux.org glab release create v$$VERSION $(TARBALLDIR)/$(PROJECT)-v$$VERSION.tar.gz* target/release/$(PROJECT) target/release/$(PROJECT).sig
