@@ -1036,8 +1036,8 @@ impl GitLabGlue {
         project: &GroupProjects,
     ) -> Result<bool> {
         let expected_request_access_enabled = false;
-        let expected_issues_access_level = ProjectFeatureAccessLevel::Private;
-        let expected_merge_requests_access_level = ProjectFeatureAccessLevel::Private;
+        let expected_issues_access_level = ProjectFeatureAccessLevel::Enabled;
+        let expected_merge_requests_access_level = ProjectFeatureAccessLevel::Enabled;
         let expected_merge_method = ProjectMergeMethod::FastForward;
         let expected_only_allow_merge_if_all_discussions_are_resolved = true;
         let expected_builds_access_level = ProjectFeatureAccessLevel::Disabled;
