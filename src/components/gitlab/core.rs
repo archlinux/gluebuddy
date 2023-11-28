@@ -996,6 +996,13 @@ impl GitLabGlue {
                 project.packages_enabled,
                 project.snippets_access_level,
                 project.lfs_enabled,
+                project.service_desk_enabled,
+                project.pages_access_level,
+                project.requirements_access_level,
+                project.releases_access_level,
+                project.environments_access_level,
+                project.infrastructure_access_level,
+                project.monitor_access_level,
             )
             .as_str(),
             util::format_gitlab_project_settings(
@@ -1010,6 +1017,13 @@ impl GitLabGlue {
                 project.packages_enabled,
                 expected_snippets_access_level,
                 project.lfs_enabled,
+                project.service_desk_enabled,
+                project.pages_access_level,
+                project.requirements_access_level,
+                project.releases_access_level,
+                project.environments_access_level,
+                project.infrastructure_access_level,
+                project.monitor_access_level,
             )
             .as_str(),
         )?;
@@ -1036,18 +1050,27 @@ impl GitLabGlue {
         project: &GroupProjects,
     ) -> Result<bool> {
         let expected_request_access_enabled = false;
+        let expected_packages_enabled = false;
+        let expected_lfs_enabled = false;
+        let expected_service_desk_enabled = false;
         let expected_issues_access_level = ProjectFeatureAccessLevel::Enabled;
         let expected_merge_requests_access_level = ProjectFeatureAccessLevel::Enabled;
         let expected_merge_method = ProjectMergeMethod::FastForward;
         let expected_only_allow_merge_if_all_discussions_are_resolved = true;
         let expected_builds_access_level = ProjectFeatureAccessLevel::Disabled;
-        // let expected_releases_access_level = ProjectFeatureAccessLevel::Disabled;
         let expected_container_registry_access_level = ProjectFeatureAccessLevel::Disabled;
-        let expected_packages_enabled = false;
         let expected_snippets_access_level = ProjectFeatureAccessLevel::Disabled;
-        let expected_lfs_enabled = false;
+        let expected_pages_access_level = ProjectFeatureAccessLevelPublic::Disabled;
+        let expected_requirements_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_releases_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_environments_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_infrastructure_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_monitor_access_level = ProjectFeatureAccessLevel::Disabled;
 
         if project.request_access_enabled == expected_request_access_enabled
+            && project.packages_enabled == expected_packages_enabled
+            && project.lfs_enabled == expected_lfs_enabled
+            && project.service_desk_enabled == expected_service_desk_enabled
             && project.issues_access_level == expected_issues_access_level
             && project.merge_requests_access_level == expected_merge_requests_access_level
             && project.merge_method == expected_merge_method
@@ -1055,9 +1078,13 @@ impl GitLabGlue {
                 == expected_only_allow_merge_if_all_discussions_are_resolved
             && project.builds_access_level == expected_builds_access_level
             && project.container_registry_access_level == expected_container_registry_access_level
-            && project.packages_enabled == expected_packages_enabled
             && project.snippets_access_level == expected_snippets_access_level
-            && project.lfs_enabled == expected_lfs_enabled
+            && project.pages_access_level == expected_pages_access_level
+            && project.requirements_access_level == expected_requirements_access_level
+            && project.releases_access_level == expected_releases_access_level
+            && project.environments_access_level == expected_environments_access_level
+            && project.infrastructure_access_level == expected_infrastructure_access_level
+            && project.monitor_access_level == expected_monitor_access_level
         {
             return Ok(false);
         }
@@ -1076,6 +1103,13 @@ impl GitLabGlue {
                 project.packages_enabled,
                 project.snippets_access_level,
                 project.lfs_enabled,
+                project.service_desk_enabled,
+                project.pages_access_level,
+                project.requirements_access_level,
+                project.releases_access_level,
+                project.environments_access_level,
+                project.infrastructure_access_level,
+                project.monitor_access_level,
             )
             .as_str(),
             util::format_gitlab_project_settings(
@@ -1090,6 +1124,13 @@ impl GitLabGlue {
                 expected_packages_enabled,
                 expected_snippets_access_level,
                 expected_lfs_enabled,
+                expected_service_desk_enabled,
+                expected_pages_access_level,
+                expected_requirements_access_level,
+                expected_releases_access_level,
+                expected_environments_access_level,
+                expected_infrastructure_access_level,
+                expected_monitor_access_level,
             )
             .as_str(),
         )?;
@@ -1097,6 +1138,9 @@ impl GitLabGlue {
             let endpoint = gitlab::api::projects::EditProject::builder()
                 .project(project.id)
                 .request_access_enabled(expected_request_access_enabled)
+                .packages_enabled(expected_packages_enabled)
+                .lfs_enabled(expected_lfs_enabled)
+                .service_desk_enabled(expected_service_desk_enabled)
                 .issues_access_level(expected_issues_access_level.as_gitlab_type())
                 .merge_requests_access_level(expected_merge_requests_access_level.as_gitlab_type())
                 .merge_method(expected_merge_method.as_gitlab_type())
@@ -1107,9 +1151,13 @@ impl GitLabGlue {
                 .container_registry_access_level(
                     expected_container_registry_access_level.as_gitlab_type(),
                 )
-                .packages_enabled(expected_packages_enabled)
                 .snippets_access_level(expected_snippets_access_level.as_gitlab_type())
-                .lfs_enabled(expected_lfs_enabled)
+                .pages_access_level(expected_pages_access_level.as_gitlab_type())
+                .requirements_access_level(expected_requirements_access_level.as_gitlab_type())
+                .releases_access_level(expected_releases_access_level.as_gitlab_type())
+                .environments_access_level(expected_environments_access_level.as_gitlab_type())
+                .infrastructure_access_level(expected_infrastructure_access_level.as_gitlab_type())
+                .monitor_access_level(expected_monitor_access_level.as_gitlab_type())
                 .build()
                 .unwrap();
             gitlab::api::ignore(endpoint)

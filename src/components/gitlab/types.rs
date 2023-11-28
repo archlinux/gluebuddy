@@ -1,5 +1,5 @@
 use gitlab::api::groups::BranchProtection;
-use gitlab::api::projects::{FeatureAccessLevel, MergeMethod};
+use gitlab::api::projects::{FeatureAccessLevel, FeatureAccessLevelPublic, MergeMethod};
 use serde::Deserialize;
 use serde_repr::*;
 use std::fmt::{self, Display, Formatter};
@@ -99,6 +99,39 @@ impl ProjectFeatureAccessLevel {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectFeatureAccessLevelPublic {
+    /// The feature is not available at all.
+    Disabled,
+    /// The features is only available to project members.
+    Private,
+    /// The feature is available to everyone with access to the project.
+    Enabled,
+    /// The feature is publicly available regardless of project access.
+    Public,
+}
+
+impl ProjectFeatureAccessLevelPublic {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Disabled => "disabled",
+            Self::Private => "private",
+            Self::Enabled => "enabled",
+            Self::Public => "public",
+        }
+    }
+
+    pub fn as_gitlab_type(self) -> FeatureAccessLevelPublic {
+        match self {
+            Self::Disabled => FeatureAccessLevelPublic::Disabled,
+            Self::Private => FeatureAccessLevelPublic::Private,
+            Self::Enabled => FeatureAccessLevelPublic::Enabled,
+            Self::Public => FeatureAccessLevelPublic::Public,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Serialize_repr, Deserialize_repr)]
 #[repr(u8)]
 pub enum GroupBranchProtection {
@@ -169,7 +202,9 @@ pub struct GroupProjects {
     pub path_with_namespace: String,
     pub visibility: ProjectVisibilityLevel,
     pub request_access_enabled: bool,
+    pub packages_enabled: bool,
     pub lfs_enabled: bool,
+    pub service_desk_enabled: bool,
     pub issues_access_level: ProjectFeatureAccessLevel,
     pub merge_requests_access_level: ProjectFeatureAccessLevel,
     pub merge_method: ProjectMergeMethod,
@@ -177,8 +212,12 @@ pub struct GroupProjects {
     pub builds_access_level: ProjectFeatureAccessLevel,
     pub releases_access_level: ProjectFeatureAccessLevel,
     pub container_registry_access_level: ProjectFeatureAccessLevel,
-    pub packages_enabled: bool,
     pub snippets_access_level: ProjectFeatureAccessLevel,
+    pub pages_access_level: ProjectFeatureAccessLevelPublic,
+    pub requirements_access_level: ProjectFeatureAccessLevel,
+    pub environments_access_level: ProjectFeatureAccessLevel,
+    pub infrastructure_access_level: ProjectFeatureAccessLevel,
+    pub monitor_access_level: ProjectFeatureAccessLevel,
 }
 
 #[derive(Debug, Deserialize)]

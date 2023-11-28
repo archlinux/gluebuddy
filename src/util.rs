@@ -1,5 +1,6 @@
 use crate::components::gitlab::types::{
-    MyProtectedAccessLevel, ProjectFeatureAccessLevel, ProjectMergeMethod,
+    MyProtectedAccessLevel, ProjectFeatureAccessLevel, ProjectFeatureAccessLevelPublic,
+    ProjectMergeMethod,
 };
 use anyhow::Result;
 use difference::{Changeset, Difference};
@@ -110,6 +111,13 @@ pub fn format_gitlab_project_settings(
     packages_enabled: bool,
     snippets_access_level: ProjectFeatureAccessLevel,
     lfs_enabled: bool,
+    service_desk_enabled: bool,
+    pages_access_level: ProjectFeatureAccessLevelPublic,
+    requirements_access_level: ProjectFeatureAccessLevel,
+    releases_access_level: ProjectFeatureAccessLevel,
+    environments_access_level: ProjectFeatureAccessLevel,
+    infrastructure_access_level: ProjectFeatureAccessLevel,
+    monitor_access_level: ProjectFeatureAccessLevel,
 ) -> String {
     format!(
         "gitlab_project_setting {{\n\
@@ -124,6 +132,13 @@ pub fn format_gitlab_project_settings(
         \tpackages_enabled                = {}\n\
         \tsnippets_access_level           = {}\n\
         \tlfs_enabled                     = {}\n\
+        \tservice_desk_enabled            = {}\n\
+        \tpages_access_level              = {}\n\
+        \trequirements_access_level       = {}\n\
+        \treleases_access_level           = {}\n\
+        \tenvironments_access_level       = {}\n\
+        \tinfrastructure_access_level     = {}\n\
+        \tmonitor_access_level            = {}\n\
         }}",
         namespace,
         request_access_enabled,
@@ -136,6 +151,13 @@ pub fn format_gitlab_project_settings(
         packages_enabled,
         snippets_access_level.as_str(),
         lfs_enabled,
+        service_desk_enabled,
+        pages_access_level.as_str(),
+        requirements_access_level.as_str(),
+        releases_access_level.as_str(),
+        environments_access_level.as_str(),
+        infrastructure_access_level.as_str(),
+        monitor_access_level.as_str(),
     )
 }
 
