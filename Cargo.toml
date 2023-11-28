@@ -1,6 +1,6 @@
 [package]
 name = "gluebuddy"
-version = "0.5.12"
+version = "0.5.13"
 authors = ["Levente Polyak <anthraxx@archlinux.org>", "Sven-Hendrik Haase <svenstaro@gmail.com>"]
 edition = "2021"
 license-file = "LICENSE"
