@@ -101,6 +101,7 @@ pub fn format_gitlab_user(username: &str, admin: bool) -> String {
 #[allow(clippy::too_many_arguments)]
 pub fn format_gitlab_project_settings(
     namespace: &str,
+    description: &str,
     request_access_enabled: bool,
     issues_access_level: ProjectFeatureAccessLevel,
     merge_requests_access_level: ProjectFeatureAccessLevel,
@@ -122,6 +123,7 @@ pub fn format_gitlab_project_settings(
     format!(
         "gitlab_project_setting {{\n\
         \tnamespace                       = {}\n\
+        \tdescription                     = {}\n\
         \trequest_access_enabled          = {}\n\
         \tissues_access_level             = {}\n\
         \tmerge_requests_access_level     = {}\n\
@@ -141,6 +143,7 @@ pub fn format_gitlab_project_settings(
         \tmonitor_access_level            = {}\n\
         }}",
         namespace,
+        description.replace('\n', "\\n"),
         request_access_enabled,
         issues_access_level.as_str(),
         merge_requests_access_level.as_str(),

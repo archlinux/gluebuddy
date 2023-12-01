@@ -200,6 +200,7 @@ pub struct GroupProjects {
     pub name_with_namespace: String,
     pub path: String,
     pub path_with_namespace: String,
+    pub description: Option<String>,
     pub visibility: ProjectVisibilityLevel,
     pub request_access_enabled: bool,
     pub packages_enabled: bool,
@@ -310,4 +311,9 @@ pub struct GitLabUser {
     pub username: String,
     pub name: String,
     pub email: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct File {
+    pub content: String,
 }

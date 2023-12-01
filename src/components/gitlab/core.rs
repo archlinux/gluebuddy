@@ -17,6 +17,7 @@ use std::env;
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
+use base64::Engine;
 use log::{debug, error, info, trace, warn};
 use tokio::sync::{Mutex, MutexGuard};
 
@@ -975,6 +976,7 @@ impl GitLabGlue {
         let expected_request_access_enabled = false;
         let expected_only_allow_merge_if_all_discussions_are_resolved = true;
         let expected_snippets_access_level = ProjectFeatureAccessLevel::Disabled;
+        let description = project.description.clone().unwrap_or_default();
 
         if project.request_access_enabled == expected_request_access_enabled
             && project.only_allow_merge_if_all_discussions_are_resolved
@@ -988,6 +990,7 @@ impl GitLabGlue {
         util::print_diff(
             util::format_gitlab_project_settings(
                 &project.path_with_namespace,
+                &description,
                 project.request_access_enabled,
                 project.issues_access_level,
                 project.merge_requests_access_level,
@@ -1009,6 +1012,7 @@ impl GitLabGlue {
             .as_str(),
             util::format_gitlab_project_settings(
                 &project.path_with_namespace,
+                &description,
                 expected_request_access_enabled,
                 project.issues_access_level,
                 project.merge_requests_access_level,
@@ -1069,7 +1073,13 @@ impl GitLabGlue {
         let expected_infrastructure_access_level = ProjectFeatureAccessLevel::Disabled;
         let expected_monitor_access_level = ProjectFeatureAccessLevel::Disabled;
 
-        if project.request_access_enabled == expected_request_access_enabled
+        let description = project.description.clone().unwrap_or_default();
+        let expected_description = self
+            .project_description_from_packaging_srcinfo(project)
+            .await?;
+
+        if description == expected_description
+            && project.request_access_enabled == expected_request_access_enabled
             && project.packages_enabled == expected_packages_enabled
             && project.lfs_enabled == expected_lfs_enabled
             && project.service_desk_enabled == expected_service_desk_enabled
@@ -1095,6 +1105,7 @@ impl GitLabGlue {
         util::print_diff(
             util::format_gitlab_project_settings(
                 &project.path_with_namespace,
+                &description,
                 project.request_access_enabled,
                 project.issues_access_level,
                 project.merge_requests_access_level,
@@ -1116,6 +1127,7 @@ impl GitLabGlue {
             .as_str(),
             util::format_gitlab_project_settings(
                 &project.path_with_namespace,
+                &expected_description,
                 expected_request_access_enabled,
                 expected_issues_access_level,
                 expected_merge_requests_access_level,
@@ -1139,6 +1151,7 @@ impl GitLabGlue {
         if let Action::Apply = action {
             let endpoint = gitlab::api::projects::EditProject::builder()
                 .project(project.id)
+                .description(expected_description)
                 .request_access_enabled(expected_request_access_enabled)
                 .packages_enabled(expected_packages_enabled)
                 .lfs_enabled(expected_lfs_enabled)
@@ -1304,6 +1317,47 @@ impl GitLabGlue {
             }
         }
         Ok(true)
+    }
+
+    async fn project_description_from_packaging_srcinfo(
+        &self,
+        project: &GroupProjects,
+    ) -> Result<String> {
+        let mut description = "".to_string();
+
+        let file_endpoint = gitlab::api::projects::repository::files::File::builder()
+            .project(project.id)
+            .file_path(".SRCINFO")
+            .ref_("main")
+            .build()
+            .unwrap();
+        let srcinfo: Result<File, _> = file_endpoint.query_async(&self.client).await;
+
+        if let Ok(srcinfo) = srcinfo {
+            let bytes = base64::engine::general_purpose::STANDARD.decode(&srcinfo.content)?;
+            let srcinfo = String::from_utf8(bytes)?;
+
+            let mut pkgnames: Vec<String> = vec![];
+
+            for line in srcinfo.lines() {
+                let line = line.trim();
+                if line.starts_with("pkgdesc = ") && description.is_empty() {
+                    let line = line.replace("pkgdesc = ", "");
+                    description = line.clone();
+                } else if line.starts_with("pkgname = ") && pkgnames.len() < 16 {
+                    let line = line.replace("pkgname = ", "");
+                    pkgnames.push(line.clone());
+                    if pkgnames.len() == 16 {
+                        pkgnames.push("...".to_string())
+                    }
+                }
+            }
+
+            description = format!("{}\n\npackages: {}", description, pkgnames.join(" "));
+            description.truncate(2000);
+        }
+
+        Ok(description)
     }
 }
 
