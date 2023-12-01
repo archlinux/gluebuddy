@@ -1006,6 +1006,7 @@ impl GitLabGlue {
                 project.requirements_access_level,
                 project.releases_access_level,
                 project.environments_access_level,
+                project.feature_flags_access_level,
                 project.infrastructure_access_level,
                 project.monitor_access_level,
             )
@@ -1028,6 +1029,7 @@ impl GitLabGlue {
                 project.requirements_access_level,
                 project.releases_access_level,
                 project.environments_access_level,
+                project.feature_flags_access_level,
                 project.infrastructure_access_level,
                 project.monitor_access_level,
             )
@@ -1070,6 +1072,7 @@ impl GitLabGlue {
         let expected_requirements_access_level = ProjectFeatureAccessLevel::Disabled;
         let expected_releases_access_level = ProjectFeatureAccessLevel::Disabled;
         let expected_environments_access_level = ProjectFeatureAccessLevel::Disabled;
+        let expected_feature_flags_access_level = ProjectFeatureAccessLevel::Disabled;
         let expected_infrastructure_access_level = ProjectFeatureAccessLevel::Disabled;
         let expected_monitor_access_level = ProjectFeatureAccessLevel::Disabled;
 
@@ -1095,6 +1098,7 @@ impl GitLabGlue {
             && project.requirements_access_level == expected_requirements_access_level
             && project.releases_access_level == expected_releases_access_level
             && project.environments_access_level == expected_environments_access_level
+            && project.feature_flags_access_level == expected_feature_flags_access_level
             && project.infrastructure_access_level == expected_infrastructure_access_level
             && project.monitor_access_level == expected_monitor_access_level
         {
@@ -1121,6 +1125,7 @@ impl GitLabGlue {
                 project.requirements_access_level,
                 project.releases_access_level,
                 project.environments_access_level,
+                project.feature_flags_access_level,
                 project.infrastructure_access_level,
                 project.monitor_access_level,
             )
@@ -1143,6 +1148,7 @@ impl GitLabGlue {
                 expected_requirements_access_level,
                 expected_releases_access_level,
                 expected_environments_access_level,
+                expected_feature_flags_access_level,
                 expected_infrastructure_access_level,
                 expected_monitor_access_level,
             )
@@ -1171,6 +1177,7 @@ impl GitLabGlue {
                 .requirements_access_level(expected_requirements_access_level.as_gitlab_type())
                 .releases_access_level(expected_releases_access_level.as_gitlab_type())
                 .environments_access_level(expected_environments_access_level.as_gitlab_type())
+                .feature_flags_access_level(expected_feature_flags_access_level.as_gitlab_type())
                 .infrastructure_access_level(expected_infrastructure_access_level.as_gitlab_type())
                 .monitor_access_level(expected_monitor_access_level.as_gitlab_type())
                 .build()

@@ -217,6 +217,7 @@ pub struct GroupProjects {
     pub pages_access_level: ProjectFeatureAccessLevelPublic,
     pub requirements_access_level: ProjectFeatureAccessLevel,
     pub environments_access_level: ProjectFeatureAccessLevel,
+    pub feature_flags_access_level: ProjectFeatureAccessLevel,
     pub infrastructure_access_level: ProjectFeatureAccessLevel,
     pub monitor_access_level: ProjectFeatureAccessLevel,
 }

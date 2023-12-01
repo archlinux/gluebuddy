@@ -117,6 +117,7 @@ pub fn format_gitlab_project_settings(
     requirements_access_level: ProjectFeatureAccessLevel,
     releases_access_level: ProjectFeatureAccessLevel,
     environments_access_level: ProjectFeatureAccessLevel,
+    feature_flags_access_level: ProjectFeatureAccessLevel,
     infrastructure_access_level: ProjectFeatureAccessLevel,
     monitor_access_level: ProjectFeatureAccessLevel,
 ) -> String {
@@ -139,6 +140,7 @@ pub fn format_gitlab_project_settings(
         \trequirements_access_level       = {}\n\
         \treleases_access_level           = {}\n\
         \tenvironments_access_level       = {}\n\
+        \tfeature_flags_access_level      = {}\n\
         \tinfrastructure_access_level     = {}\n\
         \tmonitor_access_level            = {}\n\
         }}",
@@ -159,6 +161,7 @@ pub fn format_gitlab_project_settings(
         requirements_access_level.as_str(),
         releases_access_level.as_str(),
         environments_access_level.as_str(),
+        feature_flags_access_level.as_str(),
         infrastructure_access_level.as_str(),
         monitor_access_level.as_str(),
     )
