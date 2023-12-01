@@ -977,6 +977,8 @@ impl GitLabGlue {
         let expected_snippets_access_level = ProjectFeatureAccessLevel::Disabled;
 
         if project.request_access_enabled == expected_request_access_enabled
+            && project.only_allow_merge_if_all_discussions_are_resolved
+                == expected_only_allow_merge_if_all_discussions_are_resolved
             && project.snippets_access_level == expected_snippets_access_level
         {
             return Ok(false);
