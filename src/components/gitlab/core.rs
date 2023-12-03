@@ -1341,7 +1341,7 @@ impl GitLabGlue {
         let srcinfo: Result<File, _> = file_endpoint.query_async(&self.client).await;
 
         if let Ok(srcinfo) = srcinfo {
-            let bytes = base64::engine::general_purpose::STANDARD.decode(&srcinfo.content)?;
+            let bytes = base64::engine::general_purpose::STANDARD.decode(srcinfo.content)?;
             let srcinfo = String::from_utf8(bytes)?;
 
             let mut pkgnames: Vec<String> = vec![];
