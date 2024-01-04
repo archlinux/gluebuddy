@@ -37,6 +37,12 @@ pub enum Command {
         action: Action,
     },
 
+    /// Mailman module commands
+    Mailman {
+        #[clap(subcommand)]
+        action: Action,
+    },
+
     /// Generate shell completions
     #[clap(name = "completions")]
     Completions(Completions),

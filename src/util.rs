@@ -71,6 +71,13 @@ pub fn access_level_from_u64(access_level: u64) -> AccessLevel {
     }
 }
 
+pub fn format_mailman_membership(mailing_list: &str, email: &str) -> String {
+    format!(
+        "mailing_list_membership {{\n\tmailing_list = {}\n\temail  = {}\n\n}}",
+        mailing_list, email
+    )
+}
+
 pub fn format_gitlab_member_access(
     namespace: &str,
     username: &str,

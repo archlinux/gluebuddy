@@ -168,10 +168,8 @@ impl Keycloak {
                     .entry(user.username.as_ref().unwrap().to_string())
                     .or_insert_with_key(|key| {
                         let arch_email = if let Some(attributes) = user.attributes {
-                            attributes
-                                .get("arch_email")
-                                .unwrap()
-                                .get(0)
+                            attributes.get("arch_email").unwrap()[0]
+                                .as_str()
                                 .unwrap()
                                 .to_string()
                         } else {

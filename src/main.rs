@@ -32,7 +32,7 @@ async fn run(args: Args) -> Result<()> {
     let state = Arc::new(Mutex::new(State::default()));
 
     let keycloak_glue = Keycloak::new(state.clone()).await?;
-    let gitlab_glue = GitLabGlue::new(state.clone()).await?;
+    // let gitlab_glue = GitLabGlue::new(state.clone()).await?;
     let mailman_glue = Mailman::new(state.clone())?;
 
     keycloak_glue.gather().await?;
@@ -44,15 +44,18 @@ async fn run(args: Args) -> Result<()> {
         Command::Keycloak { action } => {
             keycloak_glue.run(action).await?;
         }
-        Command::Gitlab { action } => gitlab_glue.run(action).await?,
+        Command::Gitlab { action } => keycloak_glue.run(action).await?,
+        Command::Mailman { action } => {
+            mailman_glue.run(action).await?;
+        }
         Command::Plan => {
-            // keycloak_glue.run(Action::Plan).await?;
+            keycloak_glue.run(Action::Plan).await?;
             // gitlab_glue.run(Action::Plan).await?;
             mailman_glue.run(Action::Plan).await?;
         }
         Command::Apply => {
             keycloak_glue.run(Action::Apply).await?;
-            gitlab_glue.run(Action::Apply).await?;
+            // gitlab_glue.run(Action::Apply).await?;
         }
     }
     Ok(())
