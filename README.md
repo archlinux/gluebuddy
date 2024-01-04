@@ -21,7 +21,7 @@ To not use the admin user for obtaining the users/groups a service account can b
 
 Create a new client, go to `Clients` and click `Create`:
 * enter a client ID 
-* make sure client protocl is set to `openid-connect`
+* make sure client protocol is set to `openid-connect`
 
 In the client settings configure:
 * Set Access Type to `Confidential`
