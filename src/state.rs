@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 pub struct User {
     pub username: String,
     pub email: String,
+    pub arch_email: String,
     pub gitlab_id: Option<u64>,
     pub memberships: HashSet<String>,
     pub groups: HashSet<String>,
@@ -33,10 +34,11 @@ impl PackageMaintainerRole {
 }
 
 impl User {
-    pub fn new(username: String, email: String) -> User {
+    pub fn new(username: String, email: String, arch_email: String) -> User {
         User {
             username,
             email,
+            arch_email,
             gitlab_id: None,
             groups: HashSet::new(),
             memberships: HashSet::new(),

@@ -166,7 +166,23 @@ impl Keycloak {
                 let state_user = state
                     .users
                     .entry(user.username.as_ref().unwrap().to_string())
-                    .or_insert_with_key(|key| User::new(key.clone(), user.email.as_ref().unwrap().to_string()));
+                    .or_insert_with_key(|key| {
+                        let arch_email = if let Some(attributes) = user.attributes {
+                            attributes
+                                .get("arch_email")
+                                .unwrap()
+                                .get(0)
+                                .unwrap()
+                                .to_string()
+                        } else {
+                            "".to_string()
+                        };
+                        User::new(
+                            key.clone(),
+                            user.email.as_ref().unwrap().to_string(),
+                            arch_email,
+                        )
+                    });
                 state_user.groups.insert(path.to_string());
             }
         }
