@@ -108,7 +108,7 @@ impl Keycloak {
 
         let all_groups = self
             .admin
-            .realm_groups_get(&self.realm, None, None, None, None, None, None)
+            .realm_groups_get(&self.realm, None, None, None, None, Some("".into()), None)
             .await?;
 
         let groups_members = all_groups
@@ -137,7 +137,8 @@ impl Keycloak {
                             .as_ref()
                             .unwrap()
                             .iter()
-                            .flat_map(|sub_group| sub_group.sub_groups.as_ref().unwrap())
+                            .filter_map(|sub_group| sub_group.sub_groups.as_ref())
+                            .flatten()
                             .map(|sub_group| {
                                 info!(
                                     "collect members of sub group {} via {}",
