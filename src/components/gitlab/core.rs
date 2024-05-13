@@ -149,7 +149,7 @@ impl GitLabGlue {
                             continue;
                         }
 
-                        match state.staff_from_gitlab_id(member.id) {
+                        match state.staff_with_externals_from_gitlab_id(member.id) {
                             None => {
                                 if self
                                     .remove_group_member(action, &state, member, &group.full_path)
