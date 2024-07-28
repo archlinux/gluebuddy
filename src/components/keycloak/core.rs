@@ -108,7 +108,16 @@ impl Keycloak {
 
         let all_groups = self
             .admin
-            .realm_groups_get(&self.realm, None, None, None, None, Some("".into()), None)
+            .realm_groups_get(
+                &self.realm,
+                None,
+                None,
+                None,
+                None,
+                Some(true),
+                Some("".into()),
+                None,
+            )
             .await?;
 
         let groups_members = all_groups
@@ -185,7 +194,7 @@ impl Keycloak {
     ) -> Result<(GroupRepresentation, Vec<UserRepresentation>)> {
         let users = self
             .admin
-            .realm_groups_with_id_members_get(
+            .realm_groups_with_group_id_members_get(
                 &self.realm,
                 group.id.as_ref().unwrap().as_ref(),
                 None,
