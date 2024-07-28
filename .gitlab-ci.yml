@@ -40,14 +40,13 @@ format:
   script:
     - cargo fmt --all -- --check
 
-audit:
+deny:
   stage: test
   needs: []
   before_script:
-    - cargo install cargo-audit
+    - cargo install cargo-deny
   script:
-    - cargo audit
-      --ignore RUSTSEC-2020-0159 # `chrono` localtime_r segfault
+    - cargo deny check
 
 clippy:
   stage: test

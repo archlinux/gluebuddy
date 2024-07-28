@@ -28,7 +28,7 @@ lint:
 	$(CARGO) fmt -- --check
 	$(CARGO) check
 	$(CARGO) clippy --all -- -D warnings
-
+	$(CARGO) deny check
 
 release: all
 	$(INSTALL) -d $(TARBALLDIR)
