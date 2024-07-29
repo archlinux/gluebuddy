@@ -3,32 +3,26 @@ use crate::components::gitlab::types::{
     ProjectMergeMethod,
 };
 use anyhow::Result;
-use difference::{Changeset, Difference};
 use gitlab::api::common::AccessLevel;
 use itertools::Itertools;
+use similar::{ChangeTag, TextDiff};
 
 pub fn print_diff(text1: &str, text2: &str) -> Result<()> {
-    let Changeset { diffs, .. } = Changeset::new(text1, text2, "\n");
+    let diff = TextDiff::from_lines(text1, text2);
 
-    for diff in diffs {
-        match diff {
-            Difference::Same(ref x) => {
-                for line in x.lines() {
-                    let line = format!(" {}", line);
-                    writeln(&line, None)?;
-                }
+    for change in diff.iter_all_changes() {
+        match change.tag() {
+            ChangeTag::Equal => {
+                let line = format!(" {}", change);
+                write(&line, None)?;
             }
-            Difference::Add(ref x) => {
-                for line in x.lines() {
-                    let line = format!("+{}", line);
-                    writeln(&line, Some(term::color::GREEN))?;
-                }
+            ChangeTag::Insert => {
+                let line = format!("+{}", change);
+                write(&line, Some(term::color::GREEN))?;
             }
-            Difference::Rem(ref x) => {
-                for line in x.lines() {
-                    let line = format!("-{}", line);
-                    writeln(&line, Some(term::color::RED))?;
-                }
+            ChangeTag::Delete => {
+                let line = format!("-{}", change);
+                write(&line, Some(term::color::RED))?;
             }
         }
     }
@@ -36,7 +30,7 @@ pub fn print_diff(text1: &str, text2: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn writeln(line: &str, fg: Option<term::color::Color>) -> Result<()> {
+pub fn write(line: &str, fg: Option<term::color::Color>) -> Result<()> {
     let stdout = term::stdout();
 
     match stdout {
@@ -45,13 +39,13 @@ pub fn writeln(line: &str, fg: Option<term::color::Color>) -> Result<()> {
                 Some(color) => stdout.fg(color)?,
                 None => stdout.reset()?,
             }
-            writeln!(stdout, "{}", line)?;
+            write!(stdout, "{}", line)?;
 
             stdout.reset()?;
             stdout.flush()?;
         }
         None => {
-            println!("{}", line);
+            print!("{}", line);
         }
     }
 
