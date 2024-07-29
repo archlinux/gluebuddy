@@ -1,3 +1,4 @@
+use clap::builder::styling;
 use clap::{ArgAction, Args as ClapArgs, CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 
@@ -6,7 +7,7 @@ use std::io::stdout;
 /// A secure helper daemon that watches several aspects
 /// of the Arch Linux infrastructure and makes sure that certain conditions are met.
 #[derive(Debug, Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, styles=help_style())]
 #[command(propagate_version = true)]
 pub struct Args {
     /// Verbose logging, specify twice for more
@@ -61,4 +62,15 @@ pub fn gen_completions(completions: &Completions) {
     let mut cmd = Args::command();
     let bin_name = cmd.get_name().to_string();
     clap_complete::generate(completions.shell, &mut cmd, &bin_name, &mut stdout());
+}
+
+pub fn help_style() -> clap::builder::Styles {
+    styling::Styles::styled()
+        .usage(styling::AnsiColor::Green.on_default() | styling::Effects::BOLD)
+        .header(styling::AnsiColor::Green.on_default() | styling::Effects::BOLD)
+        .literal(styling::AnsiColor::Cyan.on_default() | styling::Effects::BOLD)
+        .invalid(styling::AnsiColor::Yellow.on_default() | styling::Effects::BOLD)
+        .error(styling::AnsiColor::Red.on_default() | styling::Effects::BOLD)
+        .valid(styling::AnsiColor::Cyan.on_default() | styling::Effects::BOLD)
+        .placeholder(styling::AnsiColor::Cyan.on_default())
 }
