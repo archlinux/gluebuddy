@@ -191,6 +191,16 @@ pub fn format_gitlab_project_protected_tag(
     )
 }
 
+pub fn format_gitlab_project_archived(namespace: &str, archived: bool) -> String {
+    format!(
+        "gitlab_project_archived {{\n\
+        \tnamespace = {}\n\
+        \tarchived  = {}\n\
+        }}",
+        namespace, archived,
+    )
+}
+
 pub fn format_separator() -> String {
     "-".repeat(72)
 }

@@ -13,8 +13,11 @@ use crate::components::gitlab::types::*;
 
 use crate::util;
 
+use reqwest::Client;
+use std::collections::HashSet;
 use std::env;
 use std::sync::Arc;
+use time::{Duration, OffsetDateTime};
 
 use anyhow::{bail, Context, Result};
 use base64::Engine;
@@ -44,6 +47,8 @@ const ALL_TAGS_WILDCARD: &str = "*";
 const GROUP_ROOT: &str = "archlinux";
 const GROUP_PACKAGES: &str = "archlinux/packaging/packages";
 
+const PACKAGING_PROJECT_INACTIVITY_DELTA: Duration = Duration::days(30);
+
 pub struct GitLabGlue {
     client: AsyncGitlab,
     state: Arc<Mutex<State>>,
@@ -61,6 +66,7 @@ impl GitLabGlue {
 
     pub async fn gather(&self) -> Result<()> {
         self.gather_gitlab_user_ids().await?;
+        self.gather_pkgbases().await?;
         Ok(())
     }
 
@@ -110,6 +116,29 @@ impl GitLabGlue {
         Ok(())
     }
 
+    async fn gather_pkgbases(&self) -> Result<()> {
+        info!("Gathering package maintainers from ArchWeb");
+        let pkgbases = self.query_pkgbases().await?;
+
+        let mut state = self.state.lock().await;
+        state.pkgbases = pkgbases;
+
+        Ok(())
+    }
+
+    async fn query_pkgbases(&self) -> Result<HashSet<Pkgbase>> {
+        let response = Client::new()
+            .get("https://archlinux.org/packages/pkgbase-maintainer")
+            .timeout(std::time::Duration::from_secs(60))
+            .send()
+            .await?;
+        let maintainers: PkgbaseMaintainers =
+            serde_json::from_str(response.text().await?.as_str())?;
+        let pkgbases: HashSet<Pkgbase> = maintainers.keys().cloned().collect();
+
+        Ok(pkgbases)
+    }
+
     pub async fn run(&self, action: Action) -> Result<()> {
         self.update_archlinux_group_recursively(&action).await?;
         self.update_archlinux_group_members(&action).await?;
@@ -131,6 +160,7 @@ impl GitLabGlue {
         let mut to_visit = vec![root];
 
         let state = self.state.lock().await;
+        let pkgbases = &state.pkgbases;
 
         while !to_visit.is_empty() {
             match to_visit.pop() {
@@ -204,6 +234,20 @@ impl GitLabGlue {
                                     summary.change += 1;
                                 }
                             }
+
+                            let archive_label =
+                                format!("GitLab '{}' archive project", project.name_with_namespace);
+                            let mut archive_summary = PlanSummary::new(&archive_label);
+
+                            if self
+                                .archive_package_project(action, &project, pkgbases)
+                                .await?
+                            {
+                                archive_summary.change += 1;
+                            }
+
+                            println!("{}", archive_summary);
+                            println!("{}", util::format_separator());
                         } else {
                             match self.apply_project_settings(action, &project).await? {
                                 false => {}
@@ -1049,6 +1093,57 @@ impl GitLabGlue {
                 .query_async(&self.client)
                 .await?;
         }
+        Ok(true)
+    }
+
+    async fn archive_package_project(
+        &self,
+        action: &Action,
+        project: &GroupProjects,
+        pkgbases: &HashSet<Pkgbase>,
+    ) -> Result<bool> {
+        // Do nothing if the project is already archived
+        if project.archived {
+            return Ok(false);
+        }
+
+        // Do not archive packages that are still in the repos
+        if pkgbases.contains(&project.name) {
+            return Ok(false);
+        }
+
+        let now = OffsetDateTime::now_utc();
+        let threshold = now - PACKAGING_PROJECT_INACTIVITY_DELTA;
+
+        // Do nothing if the project repo has been changed within the delta
+        if project.updated_at.gt(&threshold) {
+            debug!(
+                "Archiving threshold not met for package project {} (updated: {}, threshold: {})",
+                &project.name, project.updated_at, threshold
+            );
+            return Ok(false);
+        }
+
+        debug!(
+            "Archiving package project {} (updated: {}, threshold: {})",
+            project.name_with_namespace, project.updated_at, threshold
+        );
+        util::print_diff(
+            util::format_gitlab_project_archived(&project.path_with_namespace, project.archived)
+                .as_str(),
+            util::format_gitlab_project_archived(&project.path_with_namespace, true).as_str(),
+        )?;
+
+        if let Action::Apply = action {
+            let endpoint = gitlab::api::projects::ArchiveProject::builder()
+                .project(project.id)
+                .build()
+                .unwrap();
+            gitlab::api::ignore(endpoint)
+                .query_async(&self.client)
+                .await?;
+        }
+
         Ok(true)
     }
 

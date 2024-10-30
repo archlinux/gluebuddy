@@ -2,8 +2,15 @@ use gitlab::api::groups::BranchProtection;
 use gitlab::api::projects::{FeatureAccessLevel, FeatureAccessLevelPublic, MergeMethod};
 use serde::Deserialize;
 use serde_repr::*;
+use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use strum_macros::EnumString;
+
+use time::OffsetDateTime;
+
+pub type Packager = String;
+pub type Pkgbase = String;
+pub type PkgbaseMaintainers = HashMap<Pkgbase, Vec<Packager>>;
 
 #[derive(Debug, Deserialize)]
 pub struct PlanSummary {
@@ -196,6 +203,9 @@ impl ProjectMergeMethod {
 #[derive(Debug, Deserialize)]
 pub struct GroupProjects {
     pub id: u64,
+    pub archived: bool,
+    #[serde(with = "time::serde::iso8601")]
+    pub updated_at: OffsetDateTime,
     pub name: String,
     pub name_with_namespace: String,
     pub path: String,

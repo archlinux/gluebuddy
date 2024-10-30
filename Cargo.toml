@@ -28,6 +28,7 @@ term = "1.0.0"
 itertools = "0.13.0"
 base64 = "0.22.1"
 similar = "2.6.0"
+time = { version = "0.3.41", features = ["formatting", "macros", "serde", "parsing"] }
 
 [dev-dependencies]
 rstest = "0.22.0"

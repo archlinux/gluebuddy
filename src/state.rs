@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::components::gitlab::types::Pkgbase;
+
 #[derive(Eq, PartialEq, Debug)]
 pub struct User {
     pub username: String,
@@ -81,6 +83,7 @@ impl User {
 #[derive(Default)]
 pub struct State {
     pub users: HashMap<String, User>,
+    pub pkgbases: HashSet<Pkgbase>,
 }
 
 impl State {
