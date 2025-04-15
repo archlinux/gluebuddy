@@ -25,7 +25,7 @@ serde_json = "1.0.122"
 strum = "0.26.3"
 strum_macros = "0.26.4"
 term = "1.0.0"
-itertools = "0.13.0"
+itertools = "0.14.0"
 base64 = "0.22.1"
 similar = "2.6.0"
 time = { version = "0.3.41", features = ["formatting", "macros", "serde", "parsing"] }
