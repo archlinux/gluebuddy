@@ -22,7 +22,7 @@ use time::{Duration, OffsetDateTime};
 use anyhow::{bail, Context, Result};
 use base64::Engine;
 use log::{debug, error, info, trace, warn};
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 
 use gitlab::api::{AsyncQuery, Query};
 use gitlab::{AsyncGitlab, Gitlab, GitlabBuilder};
@@ -182,7 +182,7 @@ impl GitLabGlue {
                         match state.staff_with_externals_from_gitlab_id(member.id) {
                             None => {
                                 if self
-                                    .remove_group_member(action, &state, member, &group.full_path)
+                                    .remove_group_member(action, member, &group.full_path)
                                     .await?
                                 {
                                     summary.destroy += 1;
@@ -368,10 +368,7 @@ impl GitLabGlue {
             }
             match state.staff_from_gitlab_id(member.id) {
                 None => {
-                    if self
-                        .remove_group_member(action, &state, member, group)
-                        .await?
-                    {
+                    if self.remove_group_member(action, member, group).await? {
                         summary.destroy += 1;
                     }
                 }
@@ -426,10 +423,7 @@ impl GitLabGlue {
             }
             match state.staff_from_gitlab_id(member.id) {
                 None => {
-                    if self
-                        .remove_group_member(action, &state, member, group)
-                        .await?
-                    {
+                    if self.remove_group_member(action, member, group).await? {
                         summary.destroy += 1;
                     }
                 }
@@ -486,7 +480,7 @@ impl GitLabGlue {
             match state.devops_from_gitlab_id(member.id) {
                 None => {
                     if self
-                        .remove_group_member(action, &state, member, devops_group)
+                        .remove_group_member(action, member, devops_group)
                         .await?
                     {
                         summary.destroy += 1;
@@ -570,7 +564,7 @@ impl GitLabGlue {
             match state.package_maintainer_from_gitlab_id_and_role(member.id, role) {
                 None => {
                     if self
-                        .remove_group_member(action, &state, member, &package_maintainer_group)
+                        .remove_group_member(action, member, &package_maintainer_group)
                         .await?
                     {
                         summary.destroy += 1;
@@ -630,10 +624,7 @@ impl GitLabGlue {
             }
             match state.bug_wrangler_from_gitlab_id(member.id) {
                 None => {
-                    if self
-                        .remove_group_member(action, &state, member, group)
-                        .await?
-                    {
+                    if self.remove_group_member(action, member, group).await? {
                         summary.destroy += 1;
                     }
                 }
@@ -765,10 +756,9 @@ impl GitLabGlue {
         Ok(true)
     }
 
-    async fn remove_group_member<'a>(
+    async fn remove_group_member(
         &self,
         action: &Action,
-        _state: &MutexGuard<'a, State>,
         member: &GitLabMember,
         group: &str,
     ) -> Result<bool> {
@@ -796,7 +786,7 @@ impl GitLabGlue {
         Ok(true)
     }
 
-    async fn edit_group_member_access_level<'a>(
+    async fn edit_group_member_access_level(
         &self,
         action: &Action,
         user: &User,
@@ -842,7 +832,7 @@ impl GitLabGlue {
         Ok(true)
     }
 
-    async fn edit_group_member_max_access_level<'a>(
+    async fn edit_group_member_max_access_level(
         &self,
         action: &Action,
         user: &User,
@@ -908,7 +898,7 @@ impl GitLabGlue {
         Ok(true)
     }
 
-    async fn remove_project_member<'a>(
+    async fn remove_project_member(
         &self,
         action: &Action,
         member: &GitLabMember,
