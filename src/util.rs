@@ -13,15 +13,15 @@ pub fn print_diff(text1: &str, text2: &str) -> Result<()> {
     for change in diff.iter_all_changes() {
         match change.tag() {
             ChangeTag::Equal => {
-                let line = format!(" {}", change);
+                let line = format!(" {change}");
                 write(&line, None)?;
             }
             ChangeTag::Insert => {
-                let line = format!("+{}", change);
+                let line = format!("+{change}");
                 write(&line, Some(term::color::GREEN))?;
             }
             ChangeTag::Delete => {
-                let line = format!("-{}", change);
+                let line = format!("-{change}");
                 write(&line, Some(term::color::RED))?;
             }
         }
@@ -39,13 +39,13 @@ pub fn write(line: &str, fg: Option<term::color::Color>) -> Result<()> {
                 Some(color) => stdout.fg(color)?,
                 None => stdout.reset()?,
             }
-            write!(stdout, "{}", line)?;
+            write!(stdout, "{line}")?;
 
             stdout.reset()?;
             stdout.flush()?;
         }
         None => {
-            print!("{}", line);
+            print!("{line}");
         }
     }
 
@@ -85,10 +85,9 @@ pub fn format_gitlab_member_access(
 pub fn format_gitlab_user(username: &str, admin: bool) -> String {
     format!(
         "gitlab_user {{\n\
-        \tusername = {}\n\
-        \tadmin    = {}\n\
-        }}",
-        username, admin,
+        \tusername = {username}\n\
+        \tadmin    = {admin}\n\
+        }}"
     )
 }
 
@@ -164,10 +163,9 @@ pub fn format_gitlab_project_settings(
 pub fn format_gitlab_group_settings(path: &str, request_access_enabled: bool) -> String {
     format!(
         "gitlab_group_setting {{\n\
-        \tnamespace              = {}\n\
-        \trequest_access_enabled = {}\n\
-        }}",
-        path, request_access_enabled,
+        \tnamespace              = {path}\n\
+        \trequest_access_enabled = {request_access_enabled}\n\
+        }}"
     )
 }
 
@@ -194,10 +192,9 @@ pub fn format_gitlab_project_protected_tag(
 pub fn format_gitlab_project_archived(namespace: &str, archived: bool) -> String {
     format!(
         "gitlab_project_archived {{\n\
-        \tnamespace = {}\n\
-        \tarchived  = {}\n\
-        }}",
-        namespace, archived,
+        \tnamespace = {namespace}\n\
+        \tarchived  = {archived}\n\
+        }}"
     )
 }
 

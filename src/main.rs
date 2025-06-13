@@ -68,9 +68,9 @@ async fn main() {
     env_logger::init_from_env(Env::default().default_filter_or(logging));
 
     if let Err(err) = run(args).await {
-        error!("Error: {:?}", err);
+        error!("Error: {err:?}");
         for cause in err.chain() {
-            error!("Caused by: {:?}", cause)
+            error!("Caused by: {cause:?}")
         }
         std::process::exit(1)
     }

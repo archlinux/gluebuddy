@@ -41,10 +41,7 @@ impl Keycloak {
 
         let client = Client::new();
 
-        info!(
-            "acquire API token for keycloak {} using realm {}",
-            url, realm
-        );
+        info!("acquire API token for keycloak {url} using realm {realm}");
 
         let token = Self::acquire_custom_realm(
             url,
@@ -74,8 +71,7 @@ impl Keycloak {
     ) -> Result<KeycloakAdminToken, KeycloakError> {
         let response = client
             .post(format!(
-                "{}/realms/{}/protocol/openid-connect/token",
-                url, realm
+                "{url}/realms/{realm}/protocol/openid-connect/token"
             ))
             .form(&json!({
                 "client_id": client_id,

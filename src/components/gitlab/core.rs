@@ -88,7 +88,7 @@ impl GitLabGlue {
                 .unwrap();
             let users: Vec<GitLabUser> = users_endpoint.query_async(&self.client).await?;
             if users.is_empty() {
-                warn!("Failed to query GitLab user for {}", username);
+                warn!("Failed to query GitLab user for {username}");
                 continue;
             } else if users.len() > 1 {
                 bail!(
@@ -99,7 +99,7 @@ impl GitLabGlue {
             }
             let gitlab_user = users
                 .first()
-                .with_context(|| format!("Failed to query GitLab user for {}", username))?;
+                .with_context(|| format!("Failed to query GitLab user for {username}"))?;
             debug!(
                 "Successfully retrieved user {} to GitLab id {}",
                 gitlab_user.username, gitlab_user.id
@@ -205,7 +205,7 @@ impl GitLabGlue {
                         }
                     }
 
-                    println!("{}", summary);
+                    println!("{summary}");
                     println!("{}", util::format_separator());
 
                     let label = format!("GitLab '{}' group settings", group.full_path);
@@ -215,7 +215,7 @@ impl GitLabGlue {
                         summary.change += 1;
                     }
 
-                    println!("{}", summary);
+                    println!("{summary}");
                     println!("{}", util::format_separator());
 
                     let projects = self.get_group_projects(&group.full_path).await?;
@@ -246,7 +246,7 @@ impl GitLabGlue {
                                 archive_summary.change += 1;
                             }
 
-                            println!("{}", archive_summary);
+                            println!("{archive_summary}");
                             println!("{}", util::format_separator());
                         } else {
                             match self.apply_project_settings(action, &project).await? {
@@ -257,7 +257,7 @@ impl GitLabGlue {
                             }
                         }
 
-                        println!("{}", summary);
+                        println!("{summary}");
                         println!("{}", util::format_separator());
 
                         let label =
@@ -302,7 +302,7 @@ impl GitLabGlue {
                             }
                         }
 
-                        println!("{}", summary);
+                        println!("{summary}");
                         println!("{}", util::format_separator());
 
                         let label =
@@ -325,7 +325,7 @@ impl GitLabGlue {
                         )
                         .await?;
 
-                        println!("{}", summary);
+                        println!("{summary}");
                         println!("{}", util::format_separator());
                     }
                 }
@@ -389,7 +389,7 @@ impl GitLabGlue {
             }
         }
 
-        println!("{}", summary);
+        println!("{summary}");
         println!("{}", util::format_separator());
 
         Ok(())
@@ -444,7 +444,7 @@ impl GitLabGlue {
             }
         }
 
-        println!("{}", summary);
+        println!("{summary}");
         println!("{}", util::format_separator());
 
         Ok(())
@@ -506,7 +506,7 @@ impl GitLabGlue {
             }
         }
 
-        println!("{}", summary);
+        println!("{summary}");
         println!("{}", util::format_separator());
 
         Ok(())
@@ -590,7 +590,7 @@ impl GitLabGlue {
             }
         }
 
-        println!("{}", summary);
+        println!("{summary}");
         println!("{}", util::format_separator());
 
         Ok(())
@@ -645,7 +645,7 @@ impl GitLabGlue {
             }
         }
 
-        println!("{}", summary);
+        println!("{summary}");
         println!("{}", util::format_separator());
 
         Ok(())
@@ -663,7 +663,7 @@ impl GitLabGlue {
             }
         }
 
-        println!("{}", summary);
+        println!("{summary}");
         println!("{}", util::format_separator());
 
         Ok(())
@@ -726,15 +726,12 @@ impl GitLabGlue {
     ) -> Result<bool> {
         let staff_username = &user.username;
         if user.gitlab_id.is_none() {
-            debug!(
-                "Skip adding {} to GitLab group: no GitLab user found",
-                staff_username
-            );
+            debug!("Skip adding {staff_username} to GitLab group: no GitLab user found");
             return Ok(false);
         }
         let gitlab_id = user
             .gitlab_id
-            .with_context(|| format!("Failed to unwrap GitLab user for {}", staff_username))?;
+            .with_context(|| format!("Failed to unwrap GitLab user for {staff_username}"))?;
 
         debug!("Adding user {} to GitLab group '{}'", user.username, group);
         util::print_diff(
@@ -865,15 +862,12 @@ impl GitLabGlue {
     ) -> Result<bool> {
         let staff_username = &user.username;
         if user.gitlab_id.is_none() {
-            warn!(
-                "Skip adding {} to GitLab project: no GitLab user found",
-                staff_username
-            );
+            warn!("Skip adding {staff_username} to GitLab project: no GitLab user found");
             return Ok(false);
         }
         let gitlab_id = user
             .gitlab_id
-            .with_context(|| format!("Failed to unwrap GitLab user for {}", staff_username))?;
+            .with_context(|| format!("Failed to unwrap GitLab user for {staff_username}"))?;
 
         debug!(
             "Adding user {} to GitLab project '{}'",
@@ -941,15 +935,12 @@ impl GitLabGlue {
     ) -> Result<bool> {
         let staff_username = &user.username;
         if user.gitlab_id.is_none() {
-            debug!(
-                "Skip adding {} to GitLab project: no GitLab user found",
-                staff_username
-            );
+            debug!("Skip adding {staff_username} to GitLab project: no GitLab user found");
             return Ok(false);
         }
         let gitlab_id = user
             .gitlab_id
-            .with_context(|| format!("Failed to unwrap GitLab user for {}", staff_username))?;
+            .with_context(|| format!("Failed to unwrap GitLab user for {staff_username}"))?;
 
         debug!(
             "Adding user {} to GitLab project '{}'",
