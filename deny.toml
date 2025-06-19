@@ -19,7 +19,7 @@ allow = [
   "BSL-1.0",
   "ISC",
   "MIT",
-  "MPL-2.0",
+  "CDLA-Permissive-2.0",
   "Unicode-3.0",
 ]
 
