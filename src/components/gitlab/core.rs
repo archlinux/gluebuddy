@@ -1485,12 +1485,8 @@ fn protect_branch(
     let endpoint = gitlab::api::projects::protected_branches::ProtectBranch::builder()
         .project(project.id)
         .name(branch)
-        .push_access_level(
-            gitlab::api::projects::protected_branches::ProtectedAccessLevel::Developer,
-        )
-        .merge_access_level(
-            gitlab::api::projects::protected_branches::ProtectedAccessLevel::Developer,
-        )
+        .push_access_level(gitlab::api::common::ProtectedAccessLevel::Developer)
+        .merge_access_level(gitlab::api::common::ProtectedAccessLevel::Developer)
         .build()
         .unwrap();
     let result: ProtectedBranch = endpoint.query(client)?;
