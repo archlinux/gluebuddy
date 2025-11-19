@@ -168,6 +168,14 @@ impl GitLabGlue {
                 Some(group) => {
                     let subgroups = self.get_group_subgroups(&group.full_path).await?;
                     for subgroup in subgroups {
+                        if is_in_path_skiplist(&subgroup) {
+                            println!(
+                                "No changes. GitLab '{}' group is ignored (skipped).",
+                                subgroup.full_name
+                            );
+                            println!("{}", util::format_separator());
+                            continue;
+                        }
                         to_visit.push(subgroup);
                     }
 
@@ -222,6 +230,7 @@ impl GitLabGlue {
                     for project in projects {
                         let label =
                             format!("GitLab '{}' project settings", project.name_with_namespace);
+
                         let mut summary = PlanSummary::new(&label);
 
                         if project.path_with_namespace.starts_with(GROUP_PACKAGES) {
@@ -1458,6 +1467,18 @@ fn is_archlinux_bot(member: &GitLabMember) -> bool {
             .unwrap()
             .split(',')
             .any(|bot_name| member.username.eq(bot_name));
+    }
+    false
+}
+
+fn is_in_path_skiplist(group: &Group) -> bool {
+    let path_skip_list = env::var_os("GLUEBUDDY_GITLAB_SKIP_PATHS");
+    if let Some(list) = path_skip_list {
+        return list
+            .into_string()
+            .unwrap()
+            .split(',')
+            .any(|skip_path| group.full_path.eq(skip_path));
     }
     false
 }
