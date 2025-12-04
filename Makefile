@@ -6,6 +6,7 @@ GPG := gpg
 
 PROJECT=gluebuddy
 TARBALLDIR ?= target/release/tarball
+CARGO_TARGET_DIR ?= target
 
 DEBUG := 0
 ifeq ($(DEBUG), 0)
@@ -40,6 +41,6 @@ release: all
 		$(GIT) tag --sign --message "version: release v$$VERSION" v$$VERSION && \
 		$(GIT) archive --format tar --prefix=gluebuddy-v$$VERSION/ v$$VERSION | gzip -cn > $(TARBALLDIR)/gluebuddy-v$$VERSION.tar.gz && \
 		$(GPG) --detach-sign $(TARBALLDIR)/gluebuddy-v$$VERSION.tar.gz && \
-		$(GPG) --detach-sign --yes target/release/$(PROJECT) && \
+		$(GPG) --detach-sign --yes $(CARGO_TARGET_DIR)/release/$(PROJECT) && \
 		$(GIT) push --tags origin main && \
-		GITLAB_HOST=gitlab.archlinux.org glab release create v$$VERSION $(TARBALLDIR)/$(PROJECT)-v$$VERSION.tar.gz* target/release/$(PROJECT) target/release/$(PROJECT).sig
+		GITLAB_HOST=gitlab.archlinux.org glab release create v$$VERSION $(TARBALLDIR)/$(PROJECT)-v$$VERSION.tar.gz* $(CARGO_TARGET_DIR)/release/$(PROJECT) $(CARGO_TARGET_DIR)/release/$(PROJECT).sig
