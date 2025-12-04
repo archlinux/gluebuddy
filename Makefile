@@ -33,6 +33,8 @@ lint:
 
 release: all
 	$(INSTALL) -d $(TARBALLDIR)
+	@glab --version &>/dev/null
+	@glab auth status --hostname gitlab.archlinux.org
 	@$(CARGO) pkgid | $(SED) 's/.*#/current version: /'
 	@read -p 'version> ' VERSION && \
 		$(SED) -E "s|^version = .*|version = \"$$VERSION\"|" -i Cargo.toml && \
