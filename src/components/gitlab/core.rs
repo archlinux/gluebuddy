@@ -40,6 +40,7 @@ const MAX_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 
 const GITLAB_OWNER: &str = "archceo";
 const GITLAB_BOT: &str = "archbot";
+const GITLAB_SECURITY_POLICY: &str = "^gitlab_security_policy_project.*_bot_.*";
 
 const MAIN_BRANCH: &str = "main";
 const ALL_TAGS_WILDCARD: &str = "*";
@@ -667,6 +668,9 @@ impl GitLabGlue {
         let mut summary = PlanSummary::new("GitLab 'Arch Linux/Infrastructure' project members");
 
         for member in &project_members {
+            if is_archlinux_bot(member) {
+                continue;
+            }
             if self.remove_project_member(action, member, project).await? {
                 summary.destroy += 1;
             }
@@ -1460,6 +1464,14 @@ fn is_archlinux_bot(member: &GitLabMember) -> bool {
     if member.username.eq(GITLAB_BOT) {
         return true;
     }
+    // Match pattern: gitlab_security_policy_project*_bot_*
+    if member
+        .username
+        .starts_with("gitlab_security_policy_project")
+        && member.username.contains("_bot_")
+    {
+        return true;
+    }
     let bot_users_list = env::var_os("GLUEBUDDY_GITLAB_BOT_USERS");
     if let Some(list) = bot_users_list {
         return list
@@ -1553,23 +1565,30 @@ mod tests {
     #[case(None, "test_bot_user", false)]
     #[case(Some("another_test_user"), "test_bot_user", false)]
     #[case(Some(SOME_KNOWN_BOTS), "test_bot_user", false)]
+    #[case(
+        Some(SOME_KNOWN_BOTS),
+        "gitlab_security_policy_project_19777_bot_9fcc6c1f509d956e3",
+        true
+    )]
     #[serial]
     fn is_archlinux_bot_test(
         #[case] bot_users_env: Option<&str>,
         #[case] username: &str,
         #[case] expected: bool,
     ) {
-        match bot_users_env {
-            None => env::remove_var("GLUEBUDDY_GITLAB_BOT_USERS"),
-            Some(x) => env::set_var("GLUEBUDDY_GITLAB_BOT_USERS", x),
+        unsafe {
+            match bot_users_env {
+                None => env::remove_var("GLUEBUDDY_GITLAB_BOT_USERS"),
+                Some(x) => env::set_var("GLUEBUDDY_GITLAB_BOT_USERS", x),
+            }
+            let member = GitLabMember {
+                id: 0,
+                username: String::from(username),
+                name: String::from(""),
+                email: None,
+                access_level: 0,
+            };
+            assert_eq!(is_archlinux_bot(&member), expected);
         }
-        let member = GitLabMember {
-            id: 0,
-            username: String::from(username),
-            name: String::from(""),
-            email: None,
-            access_level: 0,
-        };
-        assert_eq!(is_archlinux_bot(&member), expected);
     }
 }
