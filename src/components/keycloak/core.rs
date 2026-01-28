@@ -111,7 +111,7 @@ impl Keycloak {
                 None,
                 None,
                 Some(true),
-                Some("".into()),
+                Some("*".into()),
                 None,
                 Some(false),
             )
