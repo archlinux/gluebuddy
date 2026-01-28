@@ -113,6 +113,7 @@ impl Keycloak {
                 Some(true),
                 Some("".into()),
                 None,
+                Some(false),
             )
             .await?;
 
