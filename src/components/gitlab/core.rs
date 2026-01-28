@@ -667,6 +667,9 @@ impl GitLabGlue {
         let mut summary = PlanSummary::new("GitLab 'Arch Linux/Infrastructure' project members");
 
         for member in &project_members {
+            if is_archlinux_bot(member) {
+                continue;
+            }
             if self.remove_project_member(action, member, project).await? {
                 summary.destroy += 1;
             }
