@@ -7,7 +7,7 @@
 //!   - ensure nobody except devops has higher privileges
 
 use crate::args::Action;
-use crate::state::{PackageMaintainerRole, State, User};
+use crate::state::{PackageMaintainerRole, State, User, WikiMaintainerRole};
 
 use crate::components::gitlab::types::*;
 
@@ -36,6 +36,7 @@ const DEFAULT_ARCH_LINUX_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Minimal;
 const DEFAULT_STAFF_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Reporter;
 const DEFAULT_PACKAGE_MAINTAINER_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 const DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
+const DEFAULT_WIKI_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Reporter;
 const MAX_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 
 const GITLAB_OWNER: &str = "archceo";
@@ -147,6 +148,7 @@ impl GitLabGlue {
         self.update_package_maintainer_groups(&action).await?;
         self.update_bug_wranglers_group_members(&action).await?;
         self.update_infrastructure_project_members(&action).await?;
+        self.update_wiki_maintainer_groups(&action).await?;
         Ok(())
     }
 
@@ -533,6 +535,14 @@ impl GitLabGlue {
         Ok(())
     }
 
+    async fn update_wiki_maintainer_groups(&self, action: &Action) -> Result<()> {
+        self.update_wiki_maintainer_group_members(action, WikiMaintainerRole::Maintainer)
+            .await?;
+        self.update_wiki_maintainer_group_members(action, WikiMaintainerRole::Admin)
+            .await?;
+        Ok(())
+    }
+
     async fn update_package_maintainer_group_members(
         &self,
         action: &Action,
@@ -672,6 +682,76 @@ impl GitLabGlue {
             }
             if self.remove_project_member(action, member, project).await? {
                 summary.destroy += 1;
+            }
+        }
+
+        println!("{summary}");
+        println!("{}", util::format_separator());
+
+        Ok(())
+    }
+    async fn update_wiki_maintainer_group_members(
+        &self,
+        action: &Action,
+        role: WikiMaintainerRole,
+    ) -> Result<()> {
+        let summary_label = format!(
+            "GitLab 'Arch Linux/Teams/Wiki/{}' group members",
+            role.as_str()
+        );
+        let mut summary = PlanSummary::new(&summary_label);
+        let team_path = role.to_path();
+        let wiki_maintainer_group = format!("archlinux/teams/wiki/{team_path}");
+        let group_members = self.get_group_members(&wiki_maintainer_group).await?;
+
+        let state = self.state.lock().await;
+        for staff in state.wiki_maintainers_by_role(role) {
+            if let Some(gitlab_id) = staff.gitlab_id {
+                if !group_members.iter().map(|e| e.id).any(|e| e == gitlab_id)
+                    && self
+                        .add_group_member(
+                            action,
+                            staff,
+                            &wiki_maintainer_group,
+                            DEFAULT_WIKI_GROUP_ACCESS_LEVEL,
+                        )
+                        .await?
+                {
+                    summary.add += 1;
+                }
+            }
+        }
+
+        for member in &group_members {
+            if is_archlinux_bot(member) {
+                continue;
+            }
+            match state.wiki_maintainer_from_gitlab_id_and_role(member.id, role) {
+                None => {
+                    if self
+                        .remove_group_member(action, member, &wiki_maintainer_group)
+                        .await?
+                    {
+                        summary.destroy += 1;
+                    }
+                }
+                Some(user) => match util::access_level_from_u64(member.access_level) {
+                    DEFAULT_WIKI_GROUP_ACCESS_LEVEL => {}
+                    _ => {
+                        if self
+                            .edit_group_member_access_level(
+                                action,
+                                user,
+                                member,
+                                &wiki_maintainer_group,
+                                DEFAULT_WIKI_GROUP_ACCESS_LEVEL,
+                            )
+                            .await?
+                        {
+                            summary.change += 1;
+                        }
+                    }
+                },
             }
         }
 

@@ -32,6 +32,25 @@ impl PackageMaintainerRole {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum WikiMaintainerRole {
+    Admin,
+    Maintainer,
+}
+
+impl WikiMaintainerRole {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Admin => "Maintainers",
+            Self::Maintainer => "Admins",
+        }
+    }
+
+    pub fn to_path(self) -> String {
+        self.as_str().to_ascii_lowercase().replace(' ', "-")
+    }
+}
+
 impl User {
     pub fn new(username: String) -> User {
         User {
@@ -76,6 +95,11 @@ impl User {
             "/Arch Linux Staff/Package Maintainer Team/{}",
             role.as_str()
         );
+        self.groups.iter().any(|group| group.starts_with(&expected))
+    }
+
+    pub fn has_wiki_maintainer_role(&self, role: WikiMaintainerRole) -> bool {
+        let expected = format!("/Arch Linux Staff/Wiki/{}", role.as_str());
         self.groups.iter().any(|group| group.starts_with(&expected))
     }
 }
@@ -126,6 +150,13 @@ impl State {
             .collect()
     }
 
+    pub fn wiki_maintainers_by_role(&self, role: WikiMaintainerRole) -> Vec<&User> {
+        self.users
+            .values()
+            .filter(|user| user.has_wiki_maintainer_role(role))
+            .collect()
+    }
+
     pub fn user_from_gitlab_id(&self, gitlab_id: u64) -> Option<&User> {
         self.users.values().find(|user| {
             user.gitlab_id
@@ -172,6 +203,20 @@ impl State {
         role: PackageMaintainerRole,
     ) -> Option<&User> {
         self.package_maintainers_by_role(role)
+            .into_iter()
+            .find(|user| {
+                user.gitlab_id
+                    .map(|id| id.eq(&gitlab_id))
+                    .unwrap_or_else(|| false)
+            })
+    }
+
+    pub fn wiki_maintainer_from_gitlab_id_and_role(
+        &self,
+        gitlab_id: u64,
+        role: WikiMaintainerRole,
+    ) -> Option<&User> {
+        self.wiki_maintainers_by_role(role)
             .into_iter()
             .find(|user| {
                 user.gitlab_id
