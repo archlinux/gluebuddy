@@ -39,8 +39,8 @@ const DEVOPS_INFRASTRUCTURE_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 const DEFAULT_WIKI_GROUP_ACCESS_LEVEL: AccessLevel = AccessLevel::Reporter;
 const MAX_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 
-const GITLAB_OWNER: &str = "archceo";
-const GITLAB_BOT: &str = "archbot";
+const GITLAB_BOT_OWNER: &str = "archceo";
+const GITLAB_BOT_GENERAL: &str = "archbot";
 const GITLAB_BOT_RENOVATE: &str = "renovate";
 const GITLAB_BOT_BUGBUDDY: &str = "bugbuddy";
 const GITLAB_BOT_GLUEBUDDY: &str = "gluebuddy";
@@ -130,7 +130,7 @@ impl GitLabGlue {
     /// Gather all allowed GitLab bots that may participate in GitLab group and project member
     /// lists without getting kicked out.
     ///
-    /// The static list of Arch bots can be dynamically extended from the infrastructure env
+    /// The list of Arch bots can be dynamically extended from the infrastructure env
     /// var `GLUEBUDDY_GITLAB_BOT_USERS`.
     ///
     /// Types of bots gathered:
@@ -168,10 +168,9 @@ impl GitLabGlue {
                     .username
                     .starts_with(GITLAB_BOT_SECURITY_POLICY_PREFIX)
             {
-                trace!(
+                warn!(
                     "Skipping bot user {} with GitLab id {}",
-                    gitlab_bot.username,
-                    gitlab_bot.id
+                    gitlab_bot.username, gitlab_bot.id
                 );
                 continue;
             }
@@ -189,10 +188,10 @@ impl GitLabGlue {
             );
         }
 
-        // Static list of users that are actually our bots
+        // Static list of users that are actually our Arch-specific bots
         let mut bot_usernames = vec![
-            GITLAB_OWNER.into(),
-            GITLAB_BOT.into(),
+            GITLAB_BOT_OWNER.into(),
+            GITLAB_BOT_GENERAL.into(),
             GITLAB_BOT_RENOVATE.into(),
             GITLAB_BOT_BUGBUDDY.into(),
             GITLAB_BOT_GLUEBUDDY.into(),

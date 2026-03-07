@@ -11,7 +11,7 @@ use reqwest::Client;
 
 use futures::future::try_join_all;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use log::{debug, info};
 use serde_json::json;
 use tokio::sync::Mutex;
@@ -21,6 +21,11 @@ use std::sync::Arc;
 
 use crate::state::State;
 use crate::state::User;
+
+// Use some approximated safe-guard threshold to make sure the API is actually returning a
+// multitude of results from the endpoint and not just a single one.
+const SAFE_GUARD_MINIMUM_FETCHED_GROUPS: usize = 15;
+const SAFE_GUARD_MINIMUM_FETCHED_USERS: usize = 50;
 
 pub struct Keycloak {
     admin: KeycloakAdmin,
@@ -157,6 +162,15 @@ impl Keycloak {
             });
 
         let group_members = try_join_all(groups_members).await?;
+
+        // Safe-guard to abort operations in case no groups are returned by the glob query
+        if group_members.len() < SAFE_GUARD_MINIMUM_FETCHED_GROUPS {
+            bail!(
+                "Safe-guard failed, expected at least {SAFE_GUARD_MINIMUM_FETCHED_GROUPS} keycloak groups, found {}",
+                group_members.len()
+            );
+        }
+
         let mut state = self.state.lock().await;
 
         for (group, users) in group_members {
@@ -176,6 +190,14 @@ impl Keycloak {
                     .or_insert_with_key(|key| User::new(key.clone()));
                 state_user.groups.insert(path.to_string());
             }
+        }
+
+        // Safe-guard to abort operations in case no users belonging to groups were returned
+        if state.users.len() < SAFE_GUARD_MINIMUM_FETCHED_USERS {
+            bail!(
+                "Safe-guard failed, expected at least {SAFE_GUARD_MINIMUM_FETCHED_USERS} keycloak users, found {}",
+                state.users.len()
+            );
         }
 
         Ok(())
