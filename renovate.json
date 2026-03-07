@@ -2,5 +2,17 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "Group patch & minor updates for everything except for gitlab and keycloak",
+      "groupName": "all non‑major dependencies",
+      "matchUpdateTypes": ["patch", "minor"],
+      "matchPackageNames": ["!gitlab", "!keycloak"]
+    },
+    {
+      "description": "Ensure gitlab and keycloak are not grouped because they don't follow semver",
+      "matchPackageNames": ["gitlab", "keycloak"]
+    }
   ]
 }
