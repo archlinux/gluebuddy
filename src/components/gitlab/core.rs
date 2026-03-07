@@ -7,7 +7,7 @@
 //!   - ensure nobody except devops has higher privileges
 
 use crate::args::Action;
-use crate::state::{PackageMaintainerRole, State, User, WikiMaintainerRole};
+use crate::state::{GitLabBot, PackageMaintainerRole, State, User, WikiMaintainerRole};
 
 use crate::components::gitlab::types::*;
 
@@ -41,6 +41,14 @@ const MAX_ACCESS_LEVEL: AccessLevel = AccessLevel::Developer;
 
 const GITLAB_OWNER: &str = "archceo";
 const GITLAB_BOT: &str = "archbot";
+const GITLAB_BOT_RENOVATE: &str = "renovate";
+const GITLAB_BOT_BUGBUDDY: &str = "bugbuddy";
+const GITLAB_BOT_GLUEBUDDY: &str = "gluebuddy";
+const GITLAB_BOT_BUMPBUDDY: &str = "bumpbuddy";
+
+const GITLAB_BOT_PROJECT_TOKEN_PREFIX: &str = "project_";
+const GITLAB_BOT_GROUP_TOKEN_PREFIX: &str = "group_";
+const GITLAB_BOT_SECURITY_POLICY_PREFIX: &str = "gitlab_security_policy_";
 
 const MAIN_BRANCH: &str = "main";
 const ALL_TAGS_WILDCARD: &str = "*";
@@ -66,13 +74,15 @@ impl GitLabGlue {
     }
 
     pub async fn gather(&self) -> Result<()> {
+        info!("Gathering GitLab state");
         self.gather_gitlab_user_ids().await?;
+        self.gather_gitlab_bots().await?;
         self.gather_pkgbases().await?;
         Ok(())
     }
 
     pub async fn gather_gitlab_user_ids(&self) -> Result<()> {
-        info!("Gathering GitLab state");
+        info!("Gathering GitLab users");
         let mut state = self.state.lock().await;
         for user in &mut state.users.values_mut() {
             let username = &user.username;
@@ -102,7 +112,7 @@ impl GitLabGlue {
                 .first()
                 .with_context(|| format!("Failed to query GitLab user for {username}"))?;
             debug!(
-                "Successfully retrieved user {} to GitLab id {}",
+                "Adding human user {} with GitLab id {} to state",
                 gitlab_user.username, gitlab_user.id
             );
             if user.username != gitlab_user.username {
@@ -112,6 +122,131 @@ impl GitLabGlue {
                 );
             }
             user.gitlab_id = Some(gitlab_user.id);
+        }
+
+        Ok(())
+    }
+
+    /// Gather all allowed GitLab bots that may participate in GitLab group and project member
+    /// lists without getting kicked out.
+    ///
+    /// The static list of Arch bots can be dynamically extended from the infrastructure env
+    /// var `GLUEBUDDY_GITLAB_BOT_USERS`.
+    ///
+    /// Types of bots gathered:
+    /// - GitLab internal bots
+    /// - Arch bots
+    pub async fn gather_gitlab_bots(&self) -> Result<()> {
+        info!("Gathering GitLab bots");
+        let mut state = self.state.lock().await;
+
+        let users_endpoint = gitlab::api::users::Users::builder()
+            .exclude_humans(true)
+            .build()
+            .unwrap();
+        let gitlab_bots: Vec<GitLabUser> =
+            gitlab::api::paged(users_endpoint, gitlab::api::Pagination::All)
+                .query_async(&self.client)
+                .await?;
+        if gitlab_bots.is_empty() {
+            bail!("Failed to query GitLab bots");
+        }
+
+        // Query and allow GitLab internal bots
+        for gitlab_bot in gitlab_bots {
+            // Skip bots not starting with allowlisted username prefixes.
+            // This makes sure we consciously allow stamp specific behavior like project/group
+            // tokens and security-policy bots without blindly allowing all type of unknown and
+            // future behavior.
+            if !gitlab_bot
+                .username
+                .starts_with(GITLAB_BOT_PROJECT_TOKEN_PREFIX)
+                && !gitlab_bot
+                    .username
+                    .starts_with(GITLAB_BOT_GROUP_TOKEN_PREFIX)
+                && !gitlab_bot
+                    .username
+                    .starts_with(GITLAB_BOT_SECURITY_POLICY_PREFIX)
+            {
+                trace!(
+                    "Skipping bot user {} with GitLab id {}",
+                    gitlab_bot.username,
+                    gitlab_bot.id
+                );
+                continue;
+            }
+
+            debug!(
+                "Adding bot user {} with GitLab id {} to state",
+                gitlab_bot.username, gitlab_bot.id
+            );
+            state.gitlab_bots.insert(
+                gitlab_bot.id,
+                GitLabBot {
+                    username: gitlab_bot.username,
+                    gitlab_id: gitlab_bot.id,
+                },
+            );
+        }
+
+        // Static list of users that are actually our bots
+        let mut bot_usernames = vec![
+            GITLAB_OWNER.into(),
+            GITLAB_BOT.into(),
+            GITLAB_BOT_RENOVATE.into(),
+            GITLAB_BOT_BUGBUDDY.into(),
+            GITLAB_BOT_GLUEBUDDY.into(),
+            GITLAB_BOT_BUMPBUDDY.into(),
+        ];
+
+        // Extend the static list of users with dynamically provided bot usernames from
+        // infrastructure env var `GLUEBUDDY_GITLAB_BOT_USERS`
+        let bot_users_list = env::var_os("GLUEBUDDY_GITLAB_BOT_USERS");
+        if let Some(list) = bot_users_list {
+            let env_bots = list.into_string().unwrap();
+            bot_usernames.extend(env_bots.split(',').map(|s| s.to_string()));
+        }
+
+        // Lookup all GitLab users from the bot usernames list and abort if lookup fails
+        for bot_username in &bot_usernames {
+            let users_endpoint = gitlab::api::users::Users::builder()
+                .username(bot_username)
+                .active(())
+                .build()
+                .unwrap();
+            let users: Vec<GitLabUser> = users_endpoint.query_async(&self.client).await?;
+
+            if users.is_empty() {
+                bail!("Failed to query GitLab user for {bot_username}");
+            } else if users.len() > 1 {
+                bail!(
+                    "Somehow got {} GitLab user results for {}",
+                    users.len(),
+                    bot_username
+                )
+            }
+            let gitlab_bot = users
+                .first()
+                .with_context(|| format!("Failed to query GitLab user for {bot_username}"))?;
+            if !gitlab_bot.username.eq(bot_username) {
+                bail!(
+                    "Queried bot username {bot_username} does not equal to retreived username {}",
+                    gitlab_bot.username
+                );
+            }
+
+            debug!(
+                "Adding bot user {} with GitLab id {} to state",
+                gitlab_bot.username, gitlab_bot.id
+            );
+
+            state.gitlab_bots.insert(
+                gitlab_bot.id,
+                GitLabBot {
+                    username: bot_username.to_string(),
+                    gitlab_id: gitlab_bot.id,
+                },
+            );
         }
 
         Ok(())
@@ -185,7 +320,7 @@ impl GitLabGlue {
                     let mut summary = PlanSummary::new(&label);
                     let members = self.get_group_members(&group.full_path).await?;
                     for member in &members {
-                        if is_archlinux_bot(member) {
+                        if state.is_gitlab_bot(member.id) {
                             continue;
                         }
 
@@ -279,7 +414,7 @@ impl GitLabGlue {
                             .await?;
 
                         for member in &members {
-                            if is_archlinux_bot(member) {
+                            if state.is_gitlab_bot(member.id) {
                                 continue;
                             }
 
@@ -374,7 +509,7 @@ impl GitLabGlue {
         }
 
         for member in &archlinux_group_members {
-            if is_archlinux_bot(member) {
+            if state.is_gitlab_bot(member.id) {
                 continue;
             }
             match state.staff_from_gitlab_id(member.id) {
@@ -429,7 +564,7 @@ impl GitLabGlue {
         }
 
         for member in &archlinux_group_members {
-            if is_archlinux_bot(member) {
+            if state.is_gitlab_bot(member.id) {
                 continue;
             }
             match state.staff_from_gitlab_id(member.id) {
@@ -485,7 +620,7 @@ impl GitLabGlue {
         }
 
         for member in &group_members {
-            if is_archlinux_bot(member) {
+            if state.is_gitlab_bot(member.id) {
                 continue;
             }
             match state.devops_from_gitlab_id(member.id) {
@@ -577,7 +712,7 @@ impl GitLabGlue {
         }
 
         for member in &group_members {
-            if is_archlinux_bot(member) {
+            if state.is_gitlab_bot(member.id) {
                 continue;
             }
             match state.package_maintainer_from_gitlab_id_and_role(member.id, role) {
@@ -638,7 +773,7 @@ impl GitLabGlue {
         }
 
         for member in &archlinux_group_members {
-            if is_archlinux_bot(member) {
+            if state.is_gitlab_bot(member.id) {
                 continue;
             }
             match state.bug_wrangler_from_gitlab_id(member.id) {
@@ -675,9 +810,10 @@ impl GitLabGlue {
         let project_members = self.get_project_members(project).await?;
 
         let mut summary = PlanSummary::new("GitLab 'Arch Linux/Infrastructure' project members");
+        let state = self.state.lock().await;
 
         for member in &project_members {
-            if is_archlinux_bot(member) {
+            if state.is_gitlab_bot(member.id) {
                 continue;
             }
             if self.remove_project_member(action, member, project).await? {
@@ -723,7 +859,7 @@ impl GitLabGlue {
         }
 
         for member in &group_members {
-            if is_archlinux_bot(member) {
+            if state.is_gitlab_bot(member.id) {
                 continue;
             }
             match state.wiki_maintainer_from_gitlab_id_and_role(member.id, role) {
@@ -1536,24 +1672,6 @@ impl GitLabGlue {
     }
 }
 
-fn is_archlinux_bot(member: &GitLabMember) -> bool {
-    if member.username.eq(GITLAB_OWNER) {
-        return true;
-    }
-    if member.username.eq(GITLAB_BOT) {
-        return true;
-    }
-    let bot_users_list = env::var_os("GLUEBUDDY_GITLAB_BOT_USERS");
-    if let Some(list) = bot_users_list {
-        return list
-            .into_string()
-            .unwrap()
-            .split(',')
-            .any(|bot_name| member.username.eq(bot_name));
-    }
-    false
-}
-
 fn is_in_path_skiplist(group: &Group) -> bool {
     let path_skip_list = env::var_os("GLUEBUDDY_GITLAB_SKIP_PATHS");
     if let Some(list) = path_skip_list {
@@ -1615,44 +1733,4 @@ fn unprotect_tag(client: &Gitlab, project: &GroupProjects, tag: &str) -> Result<
         .unwrap();
     gitlab::api::ignore(endpoint).query(client)?;
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rstest::rstest;
-    use serial_test::serial;
-
-    const SOME_KNOWN_BOTS: &str = "project_10185_bot2,project_19591_bot,project_19796_bot,renovate";
-
-    #[rstest]
-    #[case(None, GITLAB_OWNER, true)]
-    #[case(None, GITLAB_BOT, true)]
-    #[case(Some(SOME_KNOWN_BOTS), "renovate", true)]
-    #[case(Some(SOME_KNOWN_BOTS), "renovate_kitty", false)]
-    #[case(Some(SOME_KNOWN_BOTS), "project_10185_bot2", true)]
-    #[case(Some(SOME_KNOWN_BOTS), "project_19591_bot", true)]
-    #[case(Some(SOME_KNOWN_BOTS), "project_19796_bot", true)]
-    #[case(None, "test_bot_user", false)]
-    #[case(Some("another_test_user"), "test_bot_user", false)]
-    #[case(Some(SOME_KNOWN_BOTS), "test_bot_user", false)]
-    #[serial]
-    fn is_archlinux_bot_test(
-        #[case] bot_users_env: Option<&str>,
-        #[case] username: &str,
-        #[case] expected: bool,
-    ) {
-        match bot_users_env {
-            None => env::remove_var("GLUEBUDDY_GITLAB_BOT_USERS"),
-            Some(x) => env::set_var("GLUEBUDDY_GITLAB_BOT_USERS", x),
-        }
-        let member = GitLabMember {
-            id: 0,
-            username: String::from(username),
-            name: String::from(""),
-            email: None,
-            access_level: 0,
-        };
-        assert_eq!(is_archlinux_bot(&member), expected);
-    }
 }

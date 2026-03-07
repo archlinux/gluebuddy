@@ -12,6 +12,12 @@ pub struct User {
     pub groups: HashSet<Group>,
 }
 
+#[derive(Eq, PartialEq, Debug)]
+pub struct GitLabBot {
+    pub username: Username,
+    pub gitlab_id: u64,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum PackageMaintainerRole {
     Core,
@@ -110,6 +116,7 @@ impl User {
 #[derive(Default)]
 pub struct State {
     pub users: HashMap<Username, User>,
+    pub gitlab_bots: HashMap<u64, GitLabBot>,
     pub pkgbases: HashSet<Pkgbase>,
 }
 
@@ -234,5 +241,9 @@ impl State {
                 .map(|id| id.eq(&gitlab_id))
                 .unwrap_or_else(|| false)
         })
+    }
+
+    pub fn is_gitlab_bot(&self, gitlab_uid: u64) -> bool {
+        self.gitlab_bots.contains_key(&gitlab_uid)
     }
 }
