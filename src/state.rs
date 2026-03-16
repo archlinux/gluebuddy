@@ -50,8 +50,8 @@ pub enum WikiMaintainerRole {
 impl WikiMaintainerRole {
     pub fn as_str(self) -> &'static str {
         match self {
-            Self::Admin => "Maintainers",
-            Self::Maintainer => "Admins",
+            Self::Admin => "Admins",
+            Self::Maintainer => "Maintainers",
         }
     }
 
