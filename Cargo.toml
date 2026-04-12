@@ -27,7 +27,7 @@ strum_macros = "0.27.2"
 term = "1.2.0"
 itertools = "0.14.0"
 base64 = "0.22.1"
-similar = "2.7.0"
+similar = "3.0.0"
 time = { version = "0.3.44", features = ["formatting", "macros", "serde", "parsing"] }
 
 [dev-dependencies]
