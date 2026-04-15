@@ -13,6 +13,7 @@ ignore = [
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
 [licenses]
 version = 2
+unused-allowed-license = "deny"
 allow = [
   "Apache-2.0",
   "BSD-3-Clause",
