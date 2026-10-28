@@ -1191,9 +1191,9 @@ dependencies = [
 
 [[package]]
 name = "keycloak"
-version = "26.6.1"
+version = "26.8.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "209cc18fddbe7caf18c1cacf692ecc60b7cb8b17423644abd5e9ca0283a27ecc"
+checksum = "aaca28371a155ef251878ad01b6d12904227e7df3c35cdbc107c24b27cdc6944"
 dependencies = [
  "async-trait",
  "percent-encoding",
@@ -1713,7 +1713,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2478,7 +2478,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
